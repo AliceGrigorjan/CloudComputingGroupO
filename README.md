@@ -1,6 +1,6 @@
 # A simple chat server
 
-This is the source code for a very simple chat example, based 
+This is the source code for a very simple chat example, based on
 the [Getting Started](http://socket.io/get-started/chat/) guide
 of the Socket.IO website, which has been extended by us. Registering with usernames, private chatting and sending multimedia files is now possible.
 
