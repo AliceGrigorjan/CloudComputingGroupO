@@ -15,25 +15,74 @@
     </style>
   </head>
   <body>
+
+    <p id="nickname"></p>
     <ul id="messages"></ul>
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
+
+
+
+    <!-- Scripts -->
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       $(function () {
+        $(document).ready(function(){
+          startChat();
+        });
+      });
+
+      function startChat(){
         var socket = io();
+        var name = prompt("What's your name?","guest");
+        if(name == '' || name == null){
+          name = 'guest '+parseInt((Math.random()*10000));
+        }
+        $('#nickname').text('Your username is: '+name);
+        socket.emit('add user', name);
         $('form').submit(function(){
-          socket.emit('chat message', $('#m').val());
+          let message = $('#m').val();
+          if(message == 'PETER'){
+            socket.emit('user list', message);
+          }
+          socket.emit('chat message', message);
           $('#m').val('');
           return false;
         });
-        socket.on('chat message', function(msg){
-          $('#messages').append($('<li>').text(msg));
+
+
+        // Functions called on server message
+        socket.on('chat message', function(json){
+          let text = json.username+': '+json.message;
+          let date = new Date(json.timestamp).toLocaleTimeString();
+          $('#messages').append($('<li>').text('['+date+'] '+text));
           window.scrollTo(0, document.body.scrollHeight);
         });
-      });
+
+        socket.on('add user', function(json){
+          let date = new Date(json.timestamp).toLocaleTimeString();
+          let liConnected = $('<li>').text('['+date+'] '+json.username + ' connected to the chat...');
+          liConnected.css('background-color', 'red');
+            $('#messages').append(liConnected);
+          window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        //List online users, to be implemented...
+        socket.on('user list', function(message){
+
+        });
+
+        socket.on('user left', function(json){
+          let date = new Date(json.timestamp).toLocaleTimeString();
+          let liDisconnected = $('<li>').text('['+date+'] '+json.username + ' left the chat...');
+          liDisconnected.css('background-color', 'blue');
+            $('#messages').append(liDisconnected);
+          window.scrollTo(0, document.body.scrollHeight);
+        });
+      }
+
     </script>
   </body>
 </html>
