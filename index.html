@@ -44,7 +44,7 @@
         socket.emit('add user', name);
         $('form').submit(function(){
           let message = $('#m').val();
-          if(message == 'PETER'){
+          if(message == '\list'){
             socket.emit('user list', message);
           }
           socket.emit('chat message', message);
