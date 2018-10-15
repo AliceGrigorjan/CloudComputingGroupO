@@ -26,9 +26,21 @@ io.on('connection', function(socket){
     io.emit('add user', json);
   });
 
-  socket.on('list users', function(){
+  socket.on('user list', function(){
    let usernames =  Array.from(userSocketsMap.keys());
-   socket.send('list users', usernames);
+   console.log(usernames);
+   socket.emit('user list', usernames);
+  });
+
+  socket.on('private message', function(msg){
+    let messagearray = msg.split(' ');
+    let recipient = messagearray[0].replace('@', '');
+    let sender = socket.username;
+    let timestamp = Date.now();
+    let recipientsocket = userSocketsMap.get(recipient);
+    let json = {sender: sender, timestamp: timestamp, recipient: recipient, message: msg};
+    recipientsocket.emit('private message', json);
+
   });
 
   socket.on('disconnect', function(){

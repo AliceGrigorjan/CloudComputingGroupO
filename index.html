@@ -44,10 +44,17 @@
         socket.emit('add user', name);
         $('form').submit(function(){
           let message = $('#m').val();
-          if(message == '\list'){
+          let a = new String(message).valueOf();
+          let b = new String("\\list").valueOf();
+          if(message === "\\list"){
             socket.emit('user list', message);
+          }else if(message.split('')[0] === '@'){
+            socket.emit('private message', message);
+            appendPrivateMessageToChat(message, Date.now(), name);
           }
+          else{
           socket.emit('chat message', message);
+        }
           $('#m').val('');
           return false;
         });
@@ -63,15 +70,21 @@
 
         socket.on('add user', function(json){
           let date = new Date(json.timestamp).toLocaleTimeString();
-          let liConnected = $('<li>').text('['+date+'] '+json.username + ' connected to the chat...');
+          let liConnected = $('<li>').text('['+date+'] '+json.username + ' entered the chat...');
           liConnected.css('background-color', 'red');
             $('#messages').append(liConnected);
           window.scrollTo(0, document.body.scrollHeight);
         });
 
-        //List online users, to be implemented...
-        socket.on('user list', function(message){
+        socket.on('user list', function(jsonarray){
+          for (var i = 0; i < jsonarray.length; i++) {
+            $('#messages').append(jsonarray[i]);
+            window.scrollTo(0, document.body.scrollHeight);
+          }
+        });
 
+        socket.on('private message', function(json){
+          appendPrivateMessageToChat(json.message, json.timestamp, json.sender);
         });
 
         socket.on('user left', function(json){
@@ -81,6 +94,14 @@
             $('#messages').append(liDisconnected);
           window.scrollTo(0, document.body.scrollHeight);
         });
+      }
+
+      function appendPrivateMessageToChat(message, timestamp, sender){
+        let text = sender+': '+message;
+          let date = new Date(timestamp).toLocaleTimeString();
+          let liPrivateMessage = $('<li>').text('['+date+'] '+text).css('background-color', 'green');
+          $('#messages').append(liPrivateMessage);
+          window.scrollTo(0, document.body.scrollHeight);
       }
 
     </script>
