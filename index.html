@@ -87,6 +87,10 @@
           appendPrivateMessageToChat(json.message, json.timestamp, json.sender);
         });
 
+        socket.on('username taken', function(message){
+          alert(message);
+        });
+
         socket.on('user left', function(json){
           let date = new Date(json.timestamp).toLocaleTimeString();
           let liDisconnected = $('<li>').text('['+date+'] '+json.username + ' left the chat...');

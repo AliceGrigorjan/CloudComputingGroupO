@@ -19,11 +19,16 @@ io.on('connection', function(socket){
   });
 
   socket.on('add user', function(msg){
-    socket.username = msg;
-    userSocketsMap.set(socket.username, socket);
-    console.log('User '+socket.username+' entered the chat');
-    let json = {username: socket.username, timestamp: Date.now()};
-    io.emit('add user', json);
+    if (userSocketsMap.has(msg)){
+      socket.emit('username taken', 'Username already taken, please reload the page.')
+      socket.disconnect();
+    }else{
+      socket.username = msg;
+      userSocketsMap.set(socket.username, socket);
+      console.log('User '+socket.username+' entered the chat');
+      let json = {username: socket.username, timestamp: Date.now()};
+      io.emit('add user', json);
+    }
   });
 
   socket.on('user list', function(){
