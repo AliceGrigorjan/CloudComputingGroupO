@@ -1,11 +1,11 @@
-{ 
-  "authors": "Alice Grigorjan 751206, Merve Tagmut",
-  "name": "a-simple-chat-server",
+{
+  "authors": "Alice Grigorjan 751206, Merve Tagmut 761399",
+  "name": "Chat-Group-O",
   "version": "0.0.1",
-  "description": "our first socket.io app",
+  "private": "true",
   "dependencies": {
-    "express": "^4.15.2",
-    "socket.io": "^1.7.3"
+    "socket.io": "2.1.1",
+    "express": "4.16.4"
   },
   "scripts": {
     "start": "node index.js"
