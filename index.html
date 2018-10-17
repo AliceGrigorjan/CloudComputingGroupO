@@ -95,14 +95,14 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
     jQuery(function($) {
-        var socket = io.connect();
-        var $nickForm = $('#setNick');
-        var $nickError = $('#nickError');
-        var $nickBox = $('#nickname');
-        var $users = $('#users');
-        var $messageForm = $('#send-message');
-        var $messageBox = $('#message');
-        var $chat = $('#chat');
+        let socket = io.connect();
+        let $nickForm = $('#setNick');
+        let $nickError = $('#nickError');
+        let $nickBox = $('#nickname');
+        let $users = $('#users');
+        let $messageForm = $('#send-message');
+        let $messageBox = $('#message');
+        let $chat = $('#chat');
 
 
         $nickForm.submit(function(e) {
@@ -128,6 +128,10 @@
             });
             $messageBox.val('');
         });
+
+        /**
+         * Socket.on event functions
+         * **/
         socket.on('new message', function(data) {
             let date = new Date(data.timestamp).toLocaleString();
             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
@@ -138,6 +142,7 @@
             let liConnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' entered the chat...' + "</span><br/>");
             liConnected.css('color', 'green');
             $chat.append(liConnected);
+            socket.emit('send message', '\\list');
         });
 
 
@@ -146,6 +151,8 @@
             let liDisconnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' left the chat...' + "</span><br/>");
             liDisconnected.css('color', 'red');
             $chat.append(liDisconnected);
+            socket.emit('send message', '\\list');
+
         });
 
         socket.on('whisper', function(data) {
@@ -154,7 +161,7 @@
         });
 
         socket.on('list', function(data) {
-            var html = '';
+            let html = '';
             for (i = 0; i < data.length; i++) {
                 html += data[i] + '<br/>'
             }

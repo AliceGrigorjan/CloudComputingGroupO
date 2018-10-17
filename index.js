@@ -1,4 +1,11 @@
-var express = require('express'),
+"use strict";
+/**
+ * Chat Group O
+ * @authors Merve Tagmut 761399, Alice Grigorjan 751206
+ */
+
+ //Variables
+ let express = require('express'),
     index = express(),
     server = require('http').createServer(index),
     io = require('socket.io').listen(server),
@@ -10,11 +17,17 @@ server.listen(port, function() {
     console.log('listening on *: ' + port);
 });
 
-//routing
+//Routing a client to index.html everytime they visit localhost:3000
 index.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
+
+/**
+ * Gets called everytime a client establishes a connection
+ * 
+ * @param {SocketIO.Socket} socket The Socket of the client
+ */
 io.sockets.on('connection', function(socket) {
     socket.on('new user', function(data, callback) {
         if (data in users) {
@@ -32,23 +45,23 @@ io.sockets.on('connection', function(socket) {
     }
 
     socket.on('send message', function(data, callback) {
-        var msg = data.trim();
+        let msg = data.trim();
         if (msg.substring(0, 3) === '\\w ') {
             msg = msg.substr(3);
-            var ind = msg.indexOf(' ');
+            let ind = msg.indexOf(' ');
             if (ind !== -1) {
-                var name = msg.substring(0, ind);
-                var msg = msg.substring(ind + 1);
+                let name = msg.substring(0, ind);
+                let msgtext = msg.substring(ind + 1);
                 if (name in users) {
                     socket.emit('whisper', {
                         recipient: name,
-                        msg: msg,
+                        msg: msgtext,
                         nick: socket.nickname,
                         timestamp: new Date()
                     });
                     users[name].emit('whisper', {
                         recipient: name,
-                        msg: msg,
+                        msg: msgtext,
                         nick: socket.nickname,
                         timestamp: new Date()
                     });
@@ -59,9 +72,9 @@ io.sockets.on('connection', function(socket) {
             } else {
                 callback('Failure: Please enter your message to whisper! ')
             }
-        } else if (msg.substring(0, 5) === '\\ list') {
+        } else if (msg.substring(0, 5) === '\\list') {
             msg = msg.substr(5);
-            var ind = msg.indexOf(' ');
+            let ind = msg.indexOf(' ');
             if (ind == -1) {
                 console.log('Show Users!')
                 socket.emit('list', Object.keys(users));
