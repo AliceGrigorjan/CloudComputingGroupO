@@ -123,10 +123,15 @@
 
         $messageForm.submit(function(e) {
             e.preventDefault();
-            socket.emit('send message', $messageBox.val(), function(data) {
-                $chat.append('<span class ="error">' + data + "</span><br/>");
-            });
-            $messageBox.val('');
+            let text = $messageBox.val();
+            if(text.trim() === ''){
+                alert('Please enter a message.');
+            }else{
+                socket.emit('send message', $messageBox.val(), function(data) {
+                    $chat.append('<span class ="error">' + data + "</span><br/>");
+                });
+                $messageBox.val('');
+            }
         });
 
         /**
