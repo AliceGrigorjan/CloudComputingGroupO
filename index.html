@@ -5,10 +5,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <style>
 
-        #chat {
-            height:420px;
-            overflow-y: scroll;
-            overflow-x: scroll;
+        #Instructions{
+            font-size: 10px;
         }
 
         #contentWrap{
@@ -17,19 +15,20 @@
 
         #chatWrap{
             float: left;
-            height: 420px;
-            width: 500px;
+            height: 100%;
+            width:100%;
             background-color: whitesmoke;
             margin-left: auto;
             margin-right: auto;
         }
 
-        #send-message{
-            margin-bottom: 80px;
+        #chat {
+            height:300px;
+            overflow-x: scroll;
+            overflow-y: scroll;
         }
 
         #nickWrap{
-
             margin-left: auto;
             margin-right: auto;
             text-align: center;
@@ -50,6 +49,7 @@
 
         #users{
             display: none;
+            color:red;
         }
     </style>
 </head>
@@ -79,10 +79,12 @@
         </div>
 
         <div id="Instructions">
-            <h3>BLABLABLA </h3><br>
-            Welcome to the chat! If you want to see who's online use the <b>\list</b> command.<br>
+            <h3><b>Guidance</b></h3>
+            <p>Welcome to the chat! If you want to see who's online use the <b>\list</b> command.<br>
             If you want to send a private message to someone, simply type <b>\w</b> and the username afterwards,
-            e.g. : \w Peter Hello!
+            e.g. : \w Peter Hello!<br>
+                You can send multimedia data either as broadcast or as a private message!<br></p>
+            <p style="color: red"><b>Online User</b></p>
             <div id="users">
             </div>
         </div>
@@ -123,15 +125,11 @@
 
         $messageForm.submit(function(e) {
             e.preventDefault();
-            let text = $messageBox.val();
-            if(text.trim() === ''){
-                alert('Please enter a message.');
-            }else{
-                socket.emit('send message', $messageBox.val(), function(data) {
-                    $chat.append('<span class ="error">' + data + "</span><br/>");
-                });
-                $messageBox.val('');
-            }
+            socket.emit('send message', $messageBox.val(), function(data) {
+                $chat.append('<span class ="error">' + data + "</span><br/>");
+                $('#chat').scrollTop($('#chat')[0].scrollHeight);
+            });
+            $messageBox.val('');
         });
 
         /**
@@ -140,6 +138,7 @@
         socket.on('new message', function(data) {
             let date = new Date(data.timestamp).toLocaleString();
             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
         });
 
         socket.on('enter user', function(data) {
@@ -147,7 +146,7 @@
             let liConnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' entered the chat...' + "</span><br/>");
             liConnected.css('color', 'green');
             $chat.append(liConnected);
-            socket.emit('send message', '\\list');
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
         });
 
 
@@ -156,13 +155,13 @@
             let liDisconnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' left the chat...' + "</span><br/>");
             liDisconnected.css('color', 'red');
             $chat.append(liDisconnected);
-            socket.emit('send message', '\\list');
-
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
         });
 
         socket.on('whisper', function(data) {
             let date = new Date(data.timestamp).toLocaleString();
             $chat.append('<span class ="whisper">' + '[' + date + '] ' + '<b>' + data.nick + ' </b> @' + data.recipient + ': ' + data.msg + "</span><br/>");
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
         });
 
         socket.on('list', function(data) {

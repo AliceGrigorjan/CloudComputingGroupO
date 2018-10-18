@@ -10,7 +10,7 @@
     server = require('http').createServer(index),
     io = require('socket.io').listen(server),
     users = {},
-    port = 3000;
+    port = 4000;
 
 
 server.listen(port, function() {
