@@ -65,16 +65,17 @@
         <p id="nickError"></p>
         <form id="setNick">
             <i class="glyphicon glyphicon-user"></i>
-            <input size="30" id="nickname" autocomplete="off"></input>
-            <input type="submit"></input><br><br>
+            <input size="30" id="nickname" autocomplete="off" autofocus></input>
+            <input type="submit" value="Send"></input><br><br>
         </form>
     </div>
     <div id="contentWrap">
         <div id="chatWrap">
             <div id="chat"></div>
             <form id="send-message">
-                <input size="20" id="message" autocomplete="off"></input>
-                <input type="submit"></input>
+                <input size="20" id="message" autocomplete="off" autofocus></input>
+                <input type="submit" value="Send"></input>
+                <input id="files" type="file"></input>
             </form>
         </div>
 
@@ -114,6 +115,7 @@
                 if (data) {
                     $('#nickWrap').hide();
                     $('#contentWrap').show();
+                    $('#message').focus();
                     socket.emit('enter user', nickname);
 
                 } else {
@@ -172,7 +174,6 @@
             $users.html(html);
             $('#users').show();
         });
-
     });
 </script>
 </body>
