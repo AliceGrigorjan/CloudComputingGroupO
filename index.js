@@ -10,9 +10,9 @@ let express = require('express'),
     server = require('http').createServer(index),
     io = require('socket.io').listen(server),
     users = {},
-    port = 4000;
+    port = 3000;
 
-
+//Tell server which port it should listen to
 server.listen(port, function() {
     console.log('listening on *: ' + port);
 });
@@ -29,6 +29,12 @@ index.get('/', function(req, res) {
  * @param {SocketIO.Socket} socket The Socket of the client
  */
 io.sockets.on('connection', function(socket) {
+    /**
+    * Command for a new user who enters the chatroom
+    * 
+    * @param {any} data Data which is passed by the client (username of the client)
+    * @param {any} callback 
+    */
     socket.on('new user', function(data, callback) {
         if (data in users) {
             callback(false);
@@ -40,13 +46,21 @@ io.sockets.on('connection', function(socket) {
         }
     });
 
+    //Updates the users {} when a user enters or leaves
     function updateNicknames() {
         io.sockets.emit('usernames', Object.keys(users));
     }
 
+    /**
+    * Command for sending a message
+    * 
+    * @param {any} data Data which is passed by the client (messagetext)
+    * @param {any} callback 
+    */
     socket.on('send message', function(data, callback) {
         let msg = data.trim();
         if (msg !== '') {
+            //Check if '\w' command was used
             if (msg.substring(0, 3) === '\\w ') {
                 msg = msg.substr(3);
                 let ind = msg.indexOf(' ');
@@ -54,12 +68,14 @@ io.sockets.on('connection', function(socket) {
                     let name = msg.substring(0, ind);
                     let msgtext = msg.substring(ind + 1);
                     if (name in users && name != socket.nickname) {
+                        //socket.emit for sender
                         socket.emit('whisper', {
                             recipient: name,
                             msg: msgtext,
                             nick: socket.nickname,
                             timestamp: new Date()
                         });
+                        //users[name].emit for recipient
                         users[name].emit('whisper', {
                             recipient: name,
                             msg: msgtext,
@@ -73,15 +89,17 @@ io.sockets.on('connection', function(socket) {
                 } else {
                     callback('Please enter your message to whisper! ')
                 }
+            //Check if '\list' command was used
             } else if (msg.substring(0, 5) === '\\list') {
                 msg = msg.substr(5);
                 let ind = msg.indexOf(' ');
                 if (ind == -1) {
-                    console.log('Show Users!')
+                    console.log('Show online users!')
                     socket.emit('list', Object.keys(users));
                 } else {
-                    callback('Error! Please enter a correct command to show the online users')
+                    callback('Error! Please enter a correct command to show the online users!')
                 }
+             //Emit 'new message' command, visible for everyone
             } else {
                 io.sockets.emit('new message', {
                     msg: msg,
@@ -92,6 +110,11 @@ io.sockets.on('connection', function(socket) {
         }
     });
 
+    /**
+    * Command for status message when a new user enters
+    * 
+    * @param {any} msg Data which is passed by the client (nickname)
+    */
     socket.on('enter user', function(msg) {
         socket.nickname = msg;
         console.log('User ' + socket.nickname + ' entered the chat!');
@@ -102,6 +125,10 @@ io.sockets.on('connection', function(socket) {
         io.emit('enter user', json);
     });
 
+     /**
+    * Command for status message when a users leaves
+    * Deletes user from users {}
+    */
     socket.on('disconnect', function() {
         if (!socket.nickname) return;
         delete users[socket.nickname];

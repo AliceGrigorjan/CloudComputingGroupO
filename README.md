@@ -11,7 +11,7 @@ This is the source code for a very simple chat.
 
 **Getting Started**
 
-Run ```npm install``` and afterwards run ```npm run start```. 
+Run ```npm install``` and afterwards run ```npm start```. 
 The chat server can be reached under ```localhost:3000```.
 
 **Authors**
