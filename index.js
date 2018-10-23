@@ -31,8 +31,8 @@ index.get('/', function(req, res) {
 io.sockets.on('connection', function(socket) {
     /**
      * Command for a new user who enters the chatroom
-     * 
-     * @param {any} data Data which is passed by the client (username of the client)
+     * Checks if a user with this username is already registered
+     * @param {any} data Data which is passed by the client (username)
      * @param {any} callback 
      */
     socket.on('new user', function(data, callback) {
@@ -94,7 +94,6 @@ io.sockets.on('connection', function(socket) {
                 msg = msg.substr(5);
                 let ind = msg.indexOf(' ');
                 if (ind == -1) {
-                    console.log('Show online users!')
                     socket.emit('list', Object.keys(users));
                 } else {
                     callback('Error! Please enter a correct command to show the online users!')
