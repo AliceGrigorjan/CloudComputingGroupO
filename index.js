@@ -51,10 +51,38 @@ io.sockets.on('connection', function(socket) {
         io.sockets.emit('usernames', Object.keys(users));
     }
 
-    socket.on('send file group', function(data){
-        io.emit('send file group', socket.nickname, data.message, data.uploadfile, new Date());
+     /**
+     * Command for sending a file (broadcast)
+     * 
+     * @param {any} data Data which is passed by the client
+     */
+    socket.on('send file group', function(data) {
+        let json = {nickname: socket.nickname, message: data.message, file: data.uploadfile, timestamp: new Date()};
+        io.emit('send file group', json);
+        console.log(socket.nickname + ' sent a file to everyone!');
     });
 
+     /**
+     * Command for sending a file privately
+     * 
+     * @param {any} data Data which is passed by the client
+     */
+    socket.on('send file private', function(data) {
+        let msg = data.message.trim();
+        msg = msg.substr(3);
+        let ind = msg.indexOf(' ');
+        let msgtext = msg.substring(ind + 1);
+        let json = {nickname: socket.nickname, message: msgtext, file: data.uploadfile, timestamp: new Date(), recipient: data.recipient};
+
+        if (data.recipient in users && data.recipient != socket.nickname) {
+            //For the recipient
+            users[data.recipient].emit('send file private', json);
+
+            //For sender
+            socket.emit('send file private', json);
+            console.log(socket.nickname + ' sent a file privately to ' + data.recipient);
+        }
+    });
 
     /**
      * Command for sending a message

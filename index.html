@@ -132,13 +132,13 @@
      */
          $nickForm.submit(function(e) {
              e.preventDefault();
-             let nickname = $('#nickname').val();
+             let nickname = $nickBox.val();
              if(nickname.trim() != ''){
                  socket.emit('new user', $nickBox.val(), function(data) {
                      if (data) {
                          $('#nickContainer').hide();
                          $('#contentContainer').show();
-                         $('#message').focus();
+                         $messageBox.focus();
                          socket.emit('enter user', nickname);
                      } else {
                          $nickError.html('Please take another username! Its already taken!');
@@ -156,30 +156,33 @@
          $messageForm.submit(function(e) {
             e.preventDefault();
              if($('#files')[0].files[0] != undefined){
-                 console.log($('#files')[0].files[0]);
-                 let selectedfile = $('#files')[0].files[0];
-                 let file = [selectedfile, selectedfile.name, selectedfile.type, "file"];
-                 let json = {message: $messageBox.val(), uploadfile: file};
-                 socket.emit('send file group', json);
+                if($messageBox.val().substring(0, 3) === '\\w '){
+                    console.log($('#files')[0].files[0]);
+                    let selectedfile = $('#files')[0].files[0];
+                    let file = [selectedfile, selectedfile.name, selectedfile.type, "file"];
+                    let recipient = $messageBox.val().split(' ')[1];
+                    let json = {message: $messageBox.val(), uploadfile: file, recipient: recipient};
+                    socket.emit('send file private', json);
+                    $('#files')[0].value = '';
+                    $messageBox[0].value = '';
+                }else{
+                    console.log($('#files')[0].files[0]);
+                    let selectedfile = $('#files')[0].files[0];
+                    let file = [selectedfile, selectedfile.name, selectedfile.type, "file"];
+                    let json = {message: $messageBox.val(), uploadfile: file};
+                    socket.emit('send file group', json);
+                    $('#files')[0].value = '';
+                    $messageBox[0].value = '';
+                }
              }else{
                  socket.emit('send message', $messageBox.val(), function(data) {
                      $chat.append('<span class ="error">' + data + "</span><br/>");
-                     $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                     $chat.scrollTop($chat[0].scrollHeight);
                  });
                  $messageBox.val('');
              }
          });
 
-         //send multimedia to all
-         socket.on('send file group', function(nickname , message, file, datetime){
-             let date = new Date(datetime).toLocaleString();
-             let temp = new Blob([new Uint8Array(file[0])]);
-             let files = new File([temp], file[1],{type: file[2]});
-             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + nickname + ': </b>' + message + ' <a href="' +URL.createObjectURL(files) +'" target="_blank">'+ file[1] +"</a></span><br/>");
-             $('#chat').scrollTop($('#chat')[0].scrollHeight);
-         });
-
- 
          /**
           * Socket.on event functions
           * **/
@@ -191,7 +194,7 @@
          socket.on('new message', function(data) {
              let date = new Date(data.timestamp).toLocaleString();
              $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
-             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             $chat.scrollTop($chat[0].scrollHeight);
          });
  
          /**
@@ -202,7 +205,7 @@
              let date = new Date(data.timestamp).toLocaleString();
              let connected = $('<span class ="enter">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' entered the chat...' + "</span><br/>");
              $chat.append(connected);
-             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             $chat.scrollTop($chat[0].scrollHeight);
              socket.emit('send message', '\\list');
          });
  
@@ -215,7 +218,7 @@
              let date = new Date(data.timestamp).toLocaleString();
              let disconnected = $('<span class ="leave">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' left the chat...' + "</span><br/>");
              $chat.append(disconnected);
-             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             $chat.scrollTop($chat[0].scrollHeight);
              socket.emit('send message', '\\list');
          });
  
@@ -227,7 +230,31 @@
          socket.on('whisper', function(data) {
              let date = new Date(data.timestamp).toLocaleString();
              $chat.append('<span class ="whisper">' + '[' + date + '] ' + '<b>' + data.nick + ' </b> @' + data.recipient + ': ' + data.msg + "</span><br/>");
-             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             $chat.scrollTop($chat[0].scrollHeight);
+         });
+
+         /**
+          * Triggered when broadcast file is received from server
+          * @param {any} data Data (json) which is returned by the server
+          * **/
+         socket.on('send file group', function(data){
+             let date = new Date(data.timestamp).toLocaleString();
+             let temp = new Blob([new Uint8Array(data.file[0])]);
+             let files = new File([temp], data.file[1],{type: data.file[2]});
+             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + ': </b>' + data.message + ' <a href="' +URL.createObjectURL(files) +'" target="_blank">'+ data.file[1] +"</a></span><br/>");
+             $chat.scrollTop($chat[0].scrollHeight);
+         });
+
+          /**
+          * Triggered when private file is received from server
+          * @param {any} data Data (json) which is returned by the server
+          * **/
+          socket.on('send file private', function(data){
+             let date = new Date(data.timestamp).toLocaleString();
+             let temp = new Blob([new Uint8Array(data.file[0])]);
+             let files = new File([temp], data.file[1],{type: data.file[2]});
+             $chat.append('<span class ="whisper">' + '[' + date + '] ' + '<b>' + data.nickname +' @'+ data.recipient + ': </b>' + data.message + ' <a href="' +URL.createObjectURL(files) +'" target="_blank">'+ data.file[1] +"</a></span><br/>");
+             $chat.scrollTop($chat[0].scrollHeight);
          });
  
          /**
@@ -241,7 +268,7 @@
                  html += data[i] + '<br/>'
              }
              $users.html(html);
-             $('#users').show();
+             $users.show();
          });
      });
  </script>
