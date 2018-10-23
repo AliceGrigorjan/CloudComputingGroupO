@@ -30,11 +30,11 @@ index.get('/', function(req, res) {
  */
 io.sockets.on('connection', function(socket) {
     /**
-    * Command for a new user who enters the chatroom
-    * 
-    * @param {any} data Data which is passed by the client (username of the client)
-    * @param {any} callback 
-    */
+     * Command for a new user who enters the chatroom
+     * 
+     * @param {any} data Data which is passed by the client (username of the client)
+     * @param {any} callback 
+     */
     socket.on('new user', function(data, callback) {
         if (data in users) {
             callback(false);
@@ -52,11 +52,11 @@ io.sockets.on('connection', function(socket) {
     }
 
     /**
-    * Command for sending a message
-    * 
-    * @param {any} data Data which is passed by the client (messagetext)
-    * @param {any} callback 
-    */
+     * Command for sending a message
+     * 
+     * @param {any} data Data which is passed by the client (messagetext)
+     * @param {any} callback 
+     */
     socket.on('send message', function(data, callback) {
         let msg = data.trim();
         if (msg !== '') {
@@ -89,7 +89,7 @@ io.sockets.on('connection', function(socket) {
                 } else {
                     callback('Please enter your message to whisper! ')
                 }
-            //Check if '\list' command was used
+                //Check if '\list' command was used
             } else if (msg.substring(0, 5) === '\\list') {
                 msg = msg.substr(5);
                 let ind = msg.indexOf(' ');
@@ -99,7 +99,7 @@ io.sockets.on('connection', function(socket) {
                 } else {
                     callback('Error! Please enter a correct command to show the online users!')
                 }
-             //Emit 'new message' command, visible for everyone
+                //Emit 'new message' command, visible for everyone
             } else {
                 io.sockets.emit('new message', {
                     msg: msg,
@@ -111,10 +111,10 @@ io.sockets.on('connection', function(socket) {
     });
 
     /**
-    * Command for status message when a new user enters
-    * 
-    * @param {any} msg Data which is passed by the client (nickname)
-    */
+     * Command for status message when a new user enters
+     * 
+     * @param {any} msg Data which is passed by the client (nickname)
+     */
     socket.on('enter user', function(msg) {
         socket.nickname = msg;
         console.log('User ' + socket.nickname + ' entered the chat!');
@@ -125,10 +125,10 @@ io.sockets.on('connection', function(socket) {
         io.emit('enter user', json);
     });
 
-     /**
-    * Command for status message when a users leaves
-    * Deletes user from users {}
-    */
+    /**
+     * Command for status message when a users leaves
+     * Deletes user from users {}
+     */
     socket.on('disconnect', function() {
         if (!socket.nickname) return;
         delete users[socket.nickname];

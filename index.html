@@ -2,223 +2,225 @@
     Chat Group O
     Authors: Merve Tagmut 761399, Alice Grigorjan 751206
  -->
-<!doctype html>
-<html>
-<head>
-    <title>Chatroom</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    
-    <!-- CCS-Part -->
-    <style>
-        #Instructions{
-            font-size: 10px;
-        }
-
-        #contentContainer{
-            display: none;
-        }
-
-        #chatContainer{
-            float: left;
-            height: 100%;
-            width:100%;
-            background-color: whitesmoke;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        #chat{
-            height:300px;
-            overflow-x: scroll;
-            overflow-y: scroll;
-        }
-
-        #nickContainer{
-            margin-left: auto;
-            margin-right: auto;
-            text-align: center;
-        }
-
-        #Online Users{
-            margin-left: 100px;
-        }
-
-        .error{
-            color: red;
-        }
-
-        .whisper{
-            color: gray;
-            font-style: italic;
-        }
-
-        #users{
-            display: none;
-            color:red;
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- Containers -->
-<div id="registerpage"><br><br><br>
-    <br>
-    <div id="nickContainer">
-        <h1>Cloud Computing </h1>
-        <h2>Project</h2>
-        <br>
-        <p>Please enter your username... </p>
-        <p id="nickError"></p>
-        <form id="setNick">
-            <i class="glyphicon glyphicon-user"></i>
-            <input size="30" id="nickname" autocomplete="off" autofocus></input>
-            <input type="submit" value="Send"></input><br><br>
-        </form>
-    </div>
-    
-    <div id="contentContainer">
-        <div id="chatContainer">
-            <div id="chat"></div>
-            <form id="send-message">
-                <input size="20" id="message" autocomplete="off" autofocus></input>
-                <input type="submit" value="Send"></input>
-                <input id="files" type="file"></input>
-            </form>
-        </div>
-
-        <div id="Instructions">
-            <h3><b>Guidance</b></h3>
-            <p>Welcome to the chat! If you want to see who's online use the <b>\list</b> command.<br>
-            If you want to send a private message to someone, simply type <b>\w</b> and the username afterwards,
-            e.g. : \w Peter Hello!<br>
-                You can send multimedia data either as broadcast or as a private message!<br></p>
-            <p style="color: red"><b>Online User</b></p>
-            <div id="users">
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Scripts -->
-
-<script src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    //Variables
-    jQuery(function($) {
-        let socket = io.connect();
-        let $nickForm = $('#setNick');
-        let $nickError = $('#nickError');
-        let $nickBox = $('#nickname');
-        let $users = $('#users');
-        let $messageForm = $('#send-message');
-        let $messageBox = $('#message');
-        let $chat = $('#chat');
-
-   /**
-    * Event handler for nickForm submit
-    * 
-    * @param {JQueryEventObject} e Event which gets passed to Event Handler
-    */
-        $nickForm.submit(function(e) {
-            e.preventDefault();
-            let nickname = $('#nickname').val();
-            socket.emit('new user', $nickBox.val(), function(data) {
-                if (data) {
-                    $('#nickContainer').hide();
-                    $('#contentContainer').show();
-                    $('#message').focus();
-                    socket.emit('enter user', nickname);
-
-                } else {
-                    $nickError.html('Please take another username! Its already taken!');
-                }
-            });
-            $nickBox.val('');
-        });
-
-        /**
-        * Event handler for messageForm submit
-        * 
-        * @param {JQueryEventObject} e Event which gets passed to Event Handler
-        */
-        $messageForm.submit(function(e) {
-            e.preventDefault();
-            socket.emit('send message', $messageBox.val(), function(data) {
-                $chat.append('<span class ="error">' + data + "</span><br/>");
-                $('#chat').scrollTop($('#chat')[0].scrollHeight);
-            });
-            $messageBox.val('');
-        });
-
-        /**
-         * Socket.on event functions
-         * **/
-
-        /**
-         * Triggered when new message is send
-         * @param {any} data Data (json) which is returned by the server
-         * **/
-        socket.on('new message', function(data) {
-            let date = new Date(data.timestamp).toLocaleString();
-            $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
-        });
-
-        /**
-         * Triggered when new user enters
-         * @param {any} data Data (json) which is returned by the server
-         * **/
-        socket.on('enter user', function(data) {
-            let date = new Date(data.timestamp).toLocaleString();
-            let liConnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' entered the chat...' + "</span><br/>");
-            liConnected.css('color', 'green');
-            $chat.append(liConnected);
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
-            socket.emit('send message', '\\list');
-        });
-
-        /**
-         * Triggered when user leaves the chatroom
-         * Appends status message to the chat and updates online list
-         * @param {any} data Data (json) which is returned by the server
-         * **/
-        socket.on('user left', function(data) {
-            let date = new Date(data.timestamp).toLocaleString();
-            let liDisconnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' left the chat...' + "</span><br/>");
-            liDisconnected.css('color', 'red');
-            $chat.append(liDisconnected);
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
-            socket.emit('send message', '\\list');
-        });
-
-        /**
-         * Triggered by '\whisper' command
-         * Appends status message to the chat and updates online list
-         * @param {any} data Data (json) which is returned by the server
-         * **/
-        socket.on('whisper', function(data) {
-            let date = new Date(data.timestamp).toLocaleString();
-            $chat.append('<span class ="whisper">' + '[' + date + '] ' + '<b>' + data.nick + ' </b> @' + data.recipient + ': ' + data.msg + "</span><br/>");
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
-        });
-
-        /**
-         * Triggered by '\list' command
-         * Shows #users div which contains list of online users
-         * @param {any} data Data (usernames) which is returned by the server
-         * **/
-        socket.on('list', function(data) {
-            let html = '';
-            for (i = 0; i < data.length; i++) {
-                html += data[i] + '<br/>'
-            }
-            $users.html(html);
-            $('#users').show();
-        });
-    });
-</script>
-</body>
-</html>
+ <!doctype html>
+ <html>
+ <head>
+     <title>Chatroom</title>
+     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+     
+     <!-- CCS-Part -->
+     <style>
+         #Instructions{
+             font-size: 10px;
+         }
+ 
+         #contentContainer{
+             display: none;
+         }
+ 
+         #chatContainer{
+             float: left;
+             height: 100%;
+             width:100%;
+             background-color: whitesmoke;
+             margin-left: auto;
+             margin-right: auto;
+         }
+ 
+         #chat{
+             height:300px;
+             overflow-x: scroll;
+             overflow-y: scroll;
+         }
+ 
+         #nickContainer{
+             margin-left: auto;
+             margin-right: auto;
+             text-align: center;
+         }
+ 
+         #Online Users{
+             margin-left: 100px;
+         }
+ 
+         .error{
+             color: red;
+         }
+ 
+         .whisper{
+             color: gray;
+             font-style: italic;
+         }
+ 
+         #users{
+             display: none;
+             color:red;
+         }
+     </style>
+ </head>
+ 
+ <body>
+ 
+ <!-- Containers -->
+ <div id="registerpage"><br><br><br>
+     <br>
+     <div id="nickContainer">
+         <h1>Cloud Computing </h1>
+         <h2>Project</h2>
+         <br>
+         <p>Please enter your username... </p>
+         <p id="nickError"></p>
+         <form id="setNick">
+             <i class="glyphicon glyphicon-user"></i>
+             <input size="30" id="nickname" autocomplete="off" autofocus></input>
+             <input type="submit" value="Send"></input><br><br>
+         </form>
+     </div>
+     
+     <div id="contentContainer">
+         <div id="chatContainer">
+             <div id="chat"></div>
+             <form id="send-message">
+                 <input size="20" id="message" autocomplete="off" autofocus></input>
+                 <input type="submit" value="Send"></input>
+                 <input id="files" type="file"></input>
+             </form>
+         </div>
+ 
+         <div id="Instructions">
+             <h3><b>Guidance</b></h3>
+             <p>Welcome to the chat! If you want to see who's online use the <b>\list</b> command.<br>
+             If you want to send a private message to someone, simply type <b>\w</b> and the username afterwards,
+             e.g. : \w Peter Hello!<br>
+                 You can send multimedia data either as broadcast or as a private message!<br></p>
+             <p style="color: red"><b>Online User</b></p>
+             <div id="users">
+             </div>
+         </div>
+     </div>
+ </div>
+ 
+ 
+ <!-- Scripts -->
+ 
+ <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+ <script src="/socket.io/socket.io.js"></script>
+ <script>
+     //Variables
+     jQuery(function($) {
+         let socket = io.connect();
+         let $nickForm = $('#setNick');
+         let $nickError = $('#nickError');
+         let $nickBox = $('#nickname');
+         let $users = $('#users');
+         let $messageForm = $('#send-message');
+         let $messageBox = $('#message');
+         let $chat = $('#chat');
+ 
+    /**
+     * Event handler for nickForm submit
+     * 
+     * @param {JQueryEventObject} e Event which gets passed to Event Handler
+     */
+         $nickForm.submit(function(e) {
+             e.preventDefault();
+             let nickname = $('#nickname').val();
+             if(nickname.trim() != ''){
+                 socket.emit('new user', $nickBox.val(), function(data) {
+                     if (data) {
+                         $('#nickContainer').hide();
+                         $('#contentContainer').show();
+                         $('#message').focus();
+                         socket.emit('enter user', nickname);
+ 
+                     } else {
+                         $nickError.html('Please take another username! Its already taken!');
+                     }
+                 });
+                 $nickBox.val('');
+             }
+         });
+ 
+         /**
+         * Event handler for messageForm submit
+         * 
+         * @param {JQueryEventObject} e Event which gets passed to Event Handler
+         */
+         $messageForm.submit(function(e) {
+             e.preventDefault();
+             socket.emit('send message', $messageBox.val(), function(data) {
+                 $chat.append('<span class ="error">' + data + "</span><br/>");
+                 $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             });
+             $messageBox.val('');
+         });
+ 
+         /**
+          * Socket.on event functions
+          * **/
+ 
+         /**
+          * Triggered when new message is send
+          * @param {any} data Data (json) which is returned by the server
+          * **/
+         socket.on('new message', function(data) {
+             let date = new Date(data.timestamp).toLocaleString();
+             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
+             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+         });
+ 
+         /**
+          * Triggered when new user enters
+          * @param {any} data Data (json) which is returned by the server
+          * **/
+         socket.on('enter user', function(data) {
+             let date = new Date(data.timestamp).toLocaleString();
+             let liConnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' entered the chat...' + "</span><br/>");
+             liConnected.css('color', 'green');
+             $chat.append(liConnected);
+             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             socket.emit('send message', '\\list');
+         });
+ 
+         /**
+          * Triggered when user leaves the chatroom
+          * Appends status message to the chat and updates online list
+          * @param {any} data Data (json) which is returned by the server
+          * **/
+         socket.on('user left', function(data) {
+             let date = new Date(data.timestamp).toLocaleString();
+             let liDisconnected = $('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nickname + '</b>' + ' left the chat...' + "</span><br/>");
+             liDisconnected.css('color', 'red');
+             $chat.append(liDisconnected);
+             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+             socket.emit('send message', '\\list');
+         });
+ 
+         /**
+          * Triggered by '\whisper' command
+          * Appends status message to the chat and updates online list
+          * @param {any} data Data (json) which is returned by the server
+          * **/
+         socket.on('whisper', function(data) {
+             let date = new Date(data.timestamp).toLocaleString();
+             $chat.append('<span class ="whisper">' + '[' + date + '] ' + '<b>' + data.nick + ' </b> @' + data.recipient + ': ' + data.msg + "</span><br/>");
+             $('#chat').scrollTop($('#chat')[0].scrollHeight);
+         });
+ 
+         /**
+          * Triggered by '\list' command
+          * Shows #users div which contains list of online users
+          * @param {any} data Data (usernames) which is returned by the server
+          * **/
+         socket.on('list', function(data) {
+             let html = '';
+             for (i = 0; i < data.length; i++) {
+                 html += data[i] + '<br/>'
+             }
+             $users.html(html);
+             $('#users').show();
+         });
+     });
+ </script>
+ </body>
+ </html>
