@@ -77,6 +77,7 @@
          <h2>Project</h2>
          <br>
          <p>Please enter your username... </p>
+         <p>Only characters from A-Z and numbers are allowed.</p>
          <p id="nickError"></p>
          <form id="setNick">
              <i class="glyphicon glyphicon-user"></i>
@@ -99,7 +100,7 @@
              <h3><b>Guidance</b></h3>
              <p>Welcome to the chat! If you want to send a private message to someone, simply type <b>\w</b> and the username afterwards,
              e.g. : \w Peter Hello!<br>
-                 You can send multimedia data either as broadcast or as a private message!<br></p>
+                 You can send multimedia data either as broadcast or as a private message (up to 10mb)!<br></p>
              <p style="color: red"><b>Online User</b></p>
              <div id="users">
              </div>
@@ -153,12 +154,14 @@
          * @param {JQueryEventObject} e Event which gets passed to Event Handler
          */
          $messageForm.submit(function(e) {
+            e.preventDefault();
              if($('#files')[0].files[0] != undefined){
                  console.log($('#files')[0].files[0]);
-                 let file = [$('#files')[0].files[0], $('#files')[0].files[0].name,$('#files')[0].files[0].type,"file"];
-                 socket.emit('send file group', file);
+                 let selectedfile = $('#files')[0].files[0];
+                 let file = [selectedfile, selectedfile.name, selectedfile.type, "file"];
+                 let json = {message: $messageBox.val(), uploadfile: file};
+                 socket.emit('send file group', json);
              }else{
-                 e.preventDefault();
                  socket.emit('send message', $messageBox.val(), function(data) {
                      $chat.append('<span class ="error">' + data + "</span><br/>");
                      $('#chat').scrollTop($('#chat')[0].scrollHeight);
@@ -168,11 +171,12 @@
          });
 
          //send multimedia to all
-         socket.on('get file group', function(nickname ,file, date){
+         socket.on('send file group', function(nickname , message, file, datetime){
+             let date = new Date(datetime).toLocaleString();
              let temp = new Blob([new Uint8Array(file[0])]);
              let files = new File([temp], file[1],{type: file[2]});
-             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + nickname + ': </b><a href="' +URL.createObjectURL(files) +'" target="_blank">'+ file[1] +"</a></span><br/>");
-
+             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + nickname + ': </b>' + message + ' <a href="' +URL.createObjectURL(files) +'" target="_blank">'+ file[1] +"</a></span><br/>");
+             $('#chat').scrollTop($('#chat')[0].scrollHeight);
          });
 
  

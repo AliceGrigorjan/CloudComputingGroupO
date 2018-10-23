@@ -52,7 +52,7 @@ io.sockets.on('connection', function(socket) {
     }
 
     socket.on('send file group', function(data){
-        io.emit('get file group', socket.nickname, data, new Date());
+        io.emit('send file group', socket.nickname, data.message, data.uploadfile, new Date());
     });
 
 
@@ -92,7 +92,7 @@ io.sockets.on('connection', function(socket) {
                         callback('Enter a valid user!');
                     }
                 } else {
-                    callback('Please enter your message to whisper! ')
+                    callback('Please enter your message to whisper!')
                 }
                 //Check if '\list' command was used
             } else if (msg.substring(0, 5) === '\\list') {
