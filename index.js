@@ -51,6 +51,11 @@ io.sockets.on('connection', function(socket) {
         io.sockets.emit('usernames', Object.keys(users));
     }
 
+    socket.on('send file group', function(data){
+        io.emit('get file group', socket.nickname, data, new Date());
+    });
+
+
     /**
      * Command for sending a message
      * 

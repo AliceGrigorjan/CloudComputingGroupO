@@ -91,7 +91,7 @@
              <form id="send-message">
                  <input size="20" id="message" autocomplete="off" autofocus></input>
                  <input type="submit" value="Send"></input>
-                 <input type="file" id="files" name="fileupload" accept="image/png, image/jpeg" />
+                 <input type="file" id="files" name="fileupload" />
              </form>
          </div>
  
@@ -153,13 +153,28 @@
          * @param {JQueryEventObject} e Event which gets passed to Event Handler
          */
          $messageForm.submit(function(e) {
-             e.preventDefault();
-             socket.emit('send message', $messageBox.val(), function(data) {
-                 $chat.append('<span class ="error">' + data + "</span><br/>");
-                 $('#chat').scrollTop($('#chat')[0].scrollHeight);
-             });
-             $messageBox.val('');
+             if($('#files')[0].files[0] != undefined){
+                 console.log($('#files')[0].files[0]);
+                 let file = [$('#files')[0].files[0], $('#files')[0].files[0].name,$('#files')[0].files[0].type,"file"];
+                 socket.emit('send file group', file);
+             }else{
+                 e.preventDefault();
+                 socket.emit('send message', $messageBox.val(), function(data) {
+                     $chat.append('<span class ="error">' + data + "</span><br/>");
+                     $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                 });
+                 $messageBox.val('');
+             }
          });
+
+         //send multimedia to all
+         socket.on('get file group', function(nickname ,file, date){
+             let temp = new Blob([new Uint8Array(file[0])]);
+             let files = new File([temp], file[1],{type: file[2]});
+             $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + nickname + ': </b><a href="' +URL.createObjectURL(files) +'" target="_blank">'+ file[1] +"</a></span><br/>");
+
+         });
+
  
          /**
           * Socket.on event functions
