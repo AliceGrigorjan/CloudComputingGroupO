@@ -5,19 +5,25 @@
  */
 
 //Variables
+
+//Require express framework
 let express = require('express'),
+    //Start the app by creating an express application
     index = express(),
+    //Start the server
     server = require('http').createServer(index),
+    //Require socket.io library and start the socket
     io = require('socket.io').listen(server),
+    //Array in which the users will be stored
     users = {},
     port = 3000;
 
-//Tell server which port it should listen to
+//Start the server, which listens on port 3000
 server.listen(port, function() {
     console.log('listening on *: ' + port);
 });
 
-//Routing a client to index.html everytime they visit localhost:3000
+//Routing a client to index.html everytime they visit localhost:3000 (default)
 index.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
@@ -82,7 +88,7 @@ io.sockets.on('connection', function(socket) {
             //For the recipient
             users[data.recipient].emit('send file private', json);
 
-            //For sender
+            //For the sender
             socket.emit('send file private', json);
             console.log(socket.nickname + ' sent a file privately to ' + data.recipient);
         }

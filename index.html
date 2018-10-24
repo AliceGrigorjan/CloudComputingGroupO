@@ -160,7 +160,9 @@
          */
          $messageForm.submit(function(e) {
             e.preventDefault();
+            //Check if file has been chosen
              if($('#files')[0].files[0] != undefined){
+                 //Check if it should be sent privately and emit
                 if($messageBox.val().substring(0, 3) === '\\w '){
                     console.log($('#files')[0].files[0]);
                     let selectedfile = $('#files')[0].files[0];
@@ -171,6 +173,7 @@
                     $('#files')[0].value = '';
                     $messageBox[0].value = '';
                 }else{
+                    //If not send privately, send file to everyone
                     console.log($('#files')[0].files[0]);
                     let selectedfile = $('#files')[0].files[0];
                     let file = [selectedfile, selectedfile.name, selectedfile.type, "file"];
@@ -180,6 +183,7 @@
                     $messageBox[0].value = '';
                 }
              }else{
+                 //No file has been chosen, just emit send message
                  socket.emit('send message', $messageBox.val(), function(data) {
                      $chat.append('<span class ="error">' + data + "</span><br/>");
                      $chat.scrollTop($chat[0].scrollHeight);
@@ -229,7 +233,6 @@
  
          /**
           * Triggered by '\whisper' command
-          * Appends status message to the chat and updates online list
           * @param {any} data Data (json) which is returned by the server
           * **/
          socket.on('whisper', function(data) {
