@@ -69,9 +69,13 @@ io.sockets.on('connection', function(socket) {
      */
     socket.on('send file private', function(data) {
         let msg = data.message.trim();
+        let array = data.message.split(' ');
         msg = msg.substr(3);
         let ind = msg.indexOf(' ');
         let msgtext = msg.substring(ind + 1);
+        if(array[2] === undefined){
+            msgtext = ' ';
+        }
         let json = {nickname: socket.nickname, message: msgtext, file: data.uploadfile, timestamp: new Date(), recipient: data.recipient};
 
         if (data.recipient in users && data.recipient != socket.nickname) {

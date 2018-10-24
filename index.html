@@ -59,6 +59,11 @@
              color: gray;
              font-style: italic;
          }
+         
+         .floated {
+            float:left;
+            margin-right:5px;
+        }
  
          #users{
              display: none;
@@ -90,8 +95,8 @@
          <div id="chatContainer">
              <div id="chat"></div>
              <form id="send-message">
-                 <input size="20" id="message" autocomplete="off" autofocus></input>
-                 <input type="submit" value="Send"></input>
+                 <input size="40" id="message" class="floated" autocomplete="off" autofocus></input>
+                 <input type="submit" class="floated" value="Send"></input>
                  <input type="file" id="files" name="fileupload" />
              </form>
          </div>
@@ -100,7 +105,7 @@
              <h3><b>Guidance</b></h3>
              <p>Welcome to the chat! If you want to send a private message to someone, simply type <b>\w</b> and the username afterwards,
              e.g. : \w Peter Hello!<br>
-                 You can send multimedia data either as broadcast or as a private message (up to 10mb)!<br></p>
+                 You can send multimedia data either as broadcast or as a private message (allowed filesize depends on the browser you use)!<br></p>
              <p style="color: red"><b>Online User</b></p>
              <div id="users">
              </div>
