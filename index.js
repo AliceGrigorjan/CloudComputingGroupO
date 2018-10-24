@@ -69,7 +69,7 @@ io.sockets.on('connection', function(socket) {
      */
     socket.on('send file private', function(data) {
         let msg = data.message.trim();
-        let array = data.message.split(' ');
+        let array = data.message.trim().split(' ');
         msg = msg.substr(3);
         let ind = msg.indexOf(' ');
         let msgtext = msg.substring(ind + 1);
