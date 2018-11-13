@@ -15,8 +15,8 @@ let express = require('express'),
     //Require socket.io library and start the socket
     io = require('socket.io').listen(server),
     //Array in which the users will be stored
-    users = {},
-    port = 3000;
+    users = {};
+    let port = process.env.PORT || 3000;
 
 //Start the server, which listens on port 3000
 server.listen(port, function() {
