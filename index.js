@@ -5,7 +5,7 @@
  */
 
 //Variables
-
+let ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
 //Require express framework
 let express = require('express'),
     //Start the app by creating an express application
@@ -28,6 +28,12 @@ index.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
+let toneAnalyzer = new ToneAnalyzerV3({
+    version_date: '2017-09-21',
+    username: '5f530461-85fb-4cb3-8225-22286d6f5d21',
+    password: 'qFaQY2zU0lmd',
+    url: 'https://gateway-fra.watsonplatform.net/tone-analyzer/api'
+});
 
 /**
  * Gets called everytime a client establishes a connection
@@ -111,21 +117,36 @@ io.sockets.on('connection', function(socket) {
                     let name = msg.substring(0, ind);
                     let msgtext = msg.substring(ind + 1);
                     if (name in users && name != socket.nickname) {
-                        //socket.emit for sender
-                        socket.emit('whisper', {
-                            recipient: name,
-                            msg: msgtext,
-                            nick: socket.nickname,
-                            timestamp: new Date()
+                        var feeling = "";
+                        var toneParams = {
+                            'tone_input': {'text': msg},
+                            'content_type': 'application/json'
+                        }
+                        toneAnalyzer.tone(toneParams, (err, response) => {
+                            if (err) {
+                                console.log(err);
+                            } else {
+                                if (!(response.document_tone.tones[0] == null)) {
+                                    feeling = response.document_tone.tones[0].tone_id;
+                                    //msg = msgtext + " " + feeling; //i.wo hier ist glaub fehler auf console zeigt mood an aber client nicht
+
+                                    socket.emit('whisper', {
+                                        recipient: name,
+                                        msg: msgtext + " " + feeling, // oder hier fehler
+                                        nick: socket.nickname,
+                                        timestamp: new Date()
+                                    });
+
+                                    users[name].emit('whisper', {
+                                        recipient: name,
+                                        msg: msg,
+                                        nick: socket.nickname,
+                                        timestamp: new Date()
+                                    });
+                                    console.log(socket.nickname + ' whispered to ' + name);
+                                }
+                            }
                         });
-                        //users[name].emit for recipient
-                        users[name].emit('whisper', {
-                            recipient: name,
-                            msg: msgtext,
-                            nick: socket.nickname,
-                            timestamp: new Date()
-                        });
-                        console.log(socket.nickname + ' whispered to ' + name);
                     } else {
                         callback('Enter a valid user!');
                     }
@@ -143,11 +164,29 @@ io.sockets.on('connection', function(socket) {
                 }
                 //Emit 'new message' command, visible for everyone
             } else {
-                io.sockets.emit('new message', {
-                    msg: msg,
-                    nick: socket.nickname,
-                    timestamp: new Date()
+                var feeling = "";
+                var toneParams = {
+                    'tone_input': {'text': msg},
+                    'content_type': 'application/json'
+                }
+                toneAnalyzer.tone(toneParams, (err, response) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        if (!(response.document_tone.tones[0] == null)) {
+                            feeling = response.document_tone.tones[0].tone_id;
+                            msg = msg + " " + feeling;
+                            console.log(msg + " " + feeling);
+                        }
+                    }
+                    io.sockets.emit('new message', {
+                        msg: msg,
+                        nick: socket.nickname,
+                        timestamp: new Date()
+                    });
                 });
+                //In der Variable feeling ist es drin binde es in die message ein
+
             }
         }
     });
