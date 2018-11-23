@@ -53,20 +53,7 @@ let toneAnalyzer = new ToneAnalyzerV3({
  * @param {SocketIO.Socket} socket The Socket of the client
  */
 io.sockets.on('connection', function(socket) {
-    //database implement
-    db.open(connStr, function (err,conn) {
-        if (err) return console.log(err);
 
-        var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES ('test1','test2')";
-        conn.query(sql, function (err, data) {
-            if (err) console.log(err);
-            else console.log(data);
-
-            conn.close(function () {
-                console.log('done');
-            });
-        });
-    });
     /**
      * Command for a new user who enters the chatroom
      * Checks if a user with this username is already registered
@@ -81,8 +68,24 @@ io.sockets.on('connection', function(socket) {
             socket.nickname = data;
             users[socket.nickname] = socket;
             updateNicknames();
+            console.log(socket.nickname);
+            //database implement
+            db.open(connStr, function (err,conn) {
+                if (err) return console.log(err);
+                var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES (" + "'" + socket.nickname + "','password')";
+                console.log(socket.nickname);
+                conn.query(sql, function (err, data) {
+                    if (err) console.log(err);
+                    else console.log(data);
+
+                    conn.close(function () {
+                        console.log('done');
+                    });
+                });
+            });
         }
     });
+
 
     //Updates the users {} when a user enters or leaves
     function updateNicknames() {
