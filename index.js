@@ -18,29 +18,34 @@ let express = require('express'),
     users = {};
     let port = process.env.PORT || 3000;
 
-
+    let db = require('ibm_db');
 
 //Start the server, which listens on port 3000
 server.listen(port, function() {
     console.log('listening on *: ' + port);
 });
 
+//database implement
+var connStr = 'DRIVER={DB2};' +
+    'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;' +
+    'PORT=50000;' +
+    'DATABASE=BLUDB;' +
+    'UID=qrt96392;' +
+    'PWD=9vv9s02^kp3pz8rf';
 
 
 
 //Routing a client to index.html everytime they visit localhost:3000 (default)
-
-
 index.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-//let toneAnalyzer = new ToneAnalyzerV3({
-    //version_date: '2017-09-21',
-    //username: '5f530461-85fb-4cb3-8225-22286d6f5d21',
-    //password: 'qFaQY2zU0lmd',
-   // url: 'https://gateway-fra.watsonplatform.net/tone-analyzer/api'
-//});
+let toneAnalyzer = new ToneAnalyzerV3({
+    version_date: '2017-09-21',
+    username: '5f530461-85fb-4cb3-8225-22286d6f5d21',
+    password: 'qFaQY2zU0lmd',
+    url: 'https://gateway-fra.watsonplatform.net/tone-analyzer/api'
+});
 
 /**
  * Gets called everytime a client establishes a connection
@@ -48,6 +53,20 @@ index.get('/', function(req, res) {
  * @param {SocketIO.Socket} socket The Socket of the client
  */
 io.sockets.on('connection', function(socket) {
+    //database implement
+    db.open(connStr, function (err,conn) {
+        if (err) return console.log(err);
+
+        var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES ('test1','test2')";
+        conn.query(sql, function (err, data) {
+            if (err) console.log(err);
+            else console.log(data);
+
+            conn.close(function () {
+                console.log('done');
+            });
+        });
+    });
     /**
      * Command for a new user who enters the chatroom
      * Checks if a user with this username is already registered
