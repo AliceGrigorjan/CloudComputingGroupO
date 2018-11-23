@@ -26,8 +26,7 @@ server.listen(port, function() {
 });
 
 //database implement
-var connStr = 'DRIVER={DB2};' +
-    'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;' +
+var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;' +
     'PORT=50000;' +
     'DATABASE=BLUDB;' +
     'UID=qrt96392;' +
@@ -66,17 +65,22 @@ io.sockets.on('connection', function(socket) {
         } else {
             callback(true);
             socket.nickname = data;
+            var password = "Blabla";
             users[socket.nickname] = socket;
             updateNicknames();
             console.log(socket.nickname);
             //database implement
             db.open(connStr, function (err,conn) {
                 if (err) return console.log(err);
-                var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES (" + "'" + socket.nickname + "','password')";
+                var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES ('"+socket.nickname "','"+password+"')";
                 console.log(socket.nickname);
                 conn.query(sql, function (err, data) {
-                    if (err) console.log(err);
-                    else console.log(data);
+                    if (err){
+                        console.log(err);
+                    }
+                    else {
+                        console.log(data);
+                    }
 
                     conn.close(function () {
                         console.log('done');
