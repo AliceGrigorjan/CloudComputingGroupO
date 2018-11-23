@@ -72,7 +72,7 @@ io.sockets.on('connection', function(socket) {
             //database implement
             db.open(connStr, function (err,conn) {
                 if (err) return console.log(err);
-                var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES ('"+socket.nickname "','"+password+"')";
+                var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES (" + socket.nickname + ',' + password + ")";
                 console.log(socket.nickname);
                 conn.query(sql, function (err, data) {
                     if (err){
