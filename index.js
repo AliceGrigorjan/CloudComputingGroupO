@@ -18,22 +18,29 @@ let express = require('express'),
     users = {};
     let port = process.env.PORT || 3000;
 
+
+
 //Start the server, which listens on port 3000
 server.listen(port, function() {
     console.log('listening on *: ' + port);
 });
 
+
+
+
 //Routing a client to index.html everytime they visit localhost:3000 (default)
+
+
 index.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-let toneAnalyzer = new ToneAnalyzerV3({
-    version_date: '2017-09-21',
-    username: '5f530461-85fb-4cb3-8225-22286d6f5d21',
-    password: 'qFaQY2zU0lmd',
-    url: 'https://gateway-fra.watsonplatform.net/tone-analyzer/api'
-});
+//let toneAnalyzer = new ToneAnalyzerV3({
+    //version_date: '2017-09-21',
+    //username: '5f530461-85fb-4cb3-8225-22286d6f5d21',
+    //password: 'qFaQY2zU0lmd',
+   // url: 'https://gateway-fra.watsonplatform.net/tone-analyzer/api'
+//});
 
 /**
  * Gets called everytime a client establishes a connection

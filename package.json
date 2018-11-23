@@ -5,6 +5,10 @@
   "private": "true",
   "dependencies": {
     "express": "4.16.4",
+    "express-session": "^1.15.6",
+    "ibmcloud-appid": "^4.2.1",
+    "log4js": "^3.0.6",
+    "passport": "^0.4.0",
     "socket.io": "2.1.1",
     "watson-developer-cloud": "^3.13.0"
   },
