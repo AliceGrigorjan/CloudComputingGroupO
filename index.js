@@ -20,6 +20,10 @@ let express = require('express'),
 
     let db = require('ibm_db');
 
+    let sanitizer = require('sanitizer');
+
+    let md5 = require('md5');
+
 //Start the server, which listens on port 3000
 server.listen(port, function() {
     console.log('listening on *: ' + port);
@@ -59,33 +63,44 @@ io.sockets.on('connection', function(socket) {
      * @param {any} data Data which is passed by the client (username)
      * @param {any} callback 
      */
-    socket.on('new user', function(data, callback) {
-        if (data in users) {
+    socket.on('new user', function(json, callback) {
+        //TODO: CHECK IF USERNAME PATTERN IS OKAY & PASSWORD
+        let sanitizedUsername = sanitizer.sanitize(json.nickname);
+        let cleanpassword = sanitizer.sanitize(json.password);
+        let pwhash = md5(cleanpassword);
+        socket.userrrr = sanitizedUsername;
+        if (sanitizedUsername in users) {
             callback(false);
         } else {
             callback(true);
-            socket.nickname = data;
-            var password = "Blabla";
-            users[socket.nickname] = socket;
-            updateNicknames();
-            console.log(socket.nickname);
             //database implement
             db.open(connStr, function (err,conn) {
                 if (err) return console.log(err);
-                var sql = "INSERT INTO USERREGISTRATION (USERNAME,PASSWORT) VALUES (" + socket.nickname + ',' + password + ")";
-                console.log(socket.nickname);
-                conn.query(sql, function (err, data) {
-                    if (err){
-                        console.log(err);
-                    }
-                    else {
-                        console.log(data);
-                    }
+                
+                try{
+                    let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH FROM USER WHERE USERNAME = ?");
+                    let resultSet = selectUserStatement.executeSync([sanitizedUsername]); 
+                    var resultData = resultSet.fetchAllSync({fetchMode:3}); 
 
-                    conn.close(function () {
-                        console.log('done');
-                    });
-                });
+                    if(resultData[0]){
+                        let storedPwHash = resultData[0][1];
+                        if(pwhash == storedPwHash){
+                            successfulLogin(socket, sanitizedUsername, users);
+                        }else{
+                            socket.emit('failedLogin', '');
+                            socket.disconnect();
+                        }
+                    }else{
+                        let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
+                        insertUserStatement.executeSync([sanitizedUsername, pwhash]);
+                        successfulLogin(socket, sanitizedUsername, users);
+                        
+                    }
+                }catch(exc){
+                    console.log(exc);
+                }finally{
+                    conn.close();
+                }
             });
         }
     });
@@ -94,6 +109,24 @@ io.sockets.on('connection', function(socket) {
     //Updates the users {} when a user enters or leaves
     function updateNicknames() {
         io.sockets.emit('usernames', Object.keys(users));
+    }
+
+    function successfulLogin(socket, sanitizedUsername, users){
+        socket.emit('successfulLogin', {success: true});
+        socket.nickname = sanitizedUsername;
+        users[sanitizedUsername] = socket;
+        updateNicknames();
+        console.log(sanitizedUsername + ' is now logged in!');
+        userHasEntered(socket);
+    }
+
+    function userHasEntered(socket){
+        console.log('User ' + socket.nickname + ' entered the chat!');
+        let json = {
+            nickname: socket.nickname,
+            timestamp: new Date()
+        };
+        io.emit('enter user', json);
     }
 
      /**
@@ -230,7 +263,6 @@ io.sockets.on('connection', function(socket) {
      * @param {any} msg Data which is passed by the client (nickname)
      */
     socket.on('enter user', function(msg) {
-        socket.nickname = msg;
         console.log('User ' + socket.nickname + ' entered the chat!');
         let json = {
             nickname: socket.nickname,
@@ -239,6 +271,7 @@ io.sockets.on('connection', function(socket) {
         io.emit('enter user', json);
     });
 
+    
     /**
      * Command for status message when a users leaves
      * Deletes user from users {}
@@ -255,3 +288,4 @@ io.sockets.on('connection', function(socket) {
         io.emit('user left', json);
     });
 });
+

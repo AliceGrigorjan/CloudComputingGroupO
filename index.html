@@ -90,7 +90,7 @@
              <input size="30" id="nickname" autocomplete="off" placeholder="Username" autofocus pattern="[A-Za-z0-9]+"></input>
              <br>
              <br>
-             <input type="password" name="password" placeholder="Password"><br><br>
+             <input id="passwordfield" type="password" name="password" placeholder="Password"><br><br>
              <input type="reset">
              <input type="submit" value="Send"></input><br><br>
          </form>
@@ -130,6 +130,7 @@
          let $nickForm = $('#setNick');
          let $nickError = $('#nickError');
          let $nickBox = $('#nickname');
+         let $password = $('#passwordfield');
          let $users = $('#users');
          let $messageForm = $('#send-message');
          let $messageBox = $('#message');
@@ -144,12 +145,12 @@
              e.preventDefault();
              let nickname = $nickBox.val();
              if(nickname.trim() != ''){
-                 socket.emit('new user', $nickBox.val(), function(data) {
+                 let json = {
+                     nickname: $nickBox.val(),
+                     password: $password.val()
+                 };
+                 socket.emit('new user', json, function(data) {
                      if (data) {
-                         $('#nickContainer').hide();
-                         $('#contentContainer').show();
-                         $messageBox.focus();
-                         socket.emit('enter user', nickname);
                      } else {
                          $nickError.html('Please take another username! Its already taken!');
                      }
@@ -210,6 +211,19 @@
              $chat.append('<span class ="msg">' + '[' + date + '] ' + '<b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
              $chat.scrollTop($chat[0].scrollHeight);
          });
+
+         socket.on('successfulLogin', function(data){
+            $('#nickContainer').hide();
+            $('#contentContainer').show();
+            $messageBox.focus();
+         });
+
+         socket.on('failedLogin', function(data){
+            alert('Credentials are not valid!');
+            location.reload();
+         });
+         
+         
  
          /**
           * Triggered when new user enters
