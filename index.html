@@ -219,8 +219,12 @@
          });
 
          socket.on('failedLogin', function(data){
-            alert('Credentials are not valid!');
-            location.reload();
+            let msg = data.message;
+            let errorcode = data.errorcode;
+            alert(msg);
+            if(errorcode == 0){
+                location.reload();
+            }
          });
          
          

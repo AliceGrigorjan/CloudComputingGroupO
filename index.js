@@ -65,12 +65,17 @@ io.sockets.on('connection', function(socket) {
      */
     socket.on('new user', function(json, callback) {
         //TODO: CHECK IF USERNAME PATTERN IS OKAY & PASSWORD
-        let sanitizedUsername = sanitizer.sanitize(json.nickname);
+        let sanitizedUsername = sanitizer.sanitize(json.nickname).trim();
+        let invalidUsername = false;
+        if(sanitizedUsername == '' || sanitizedUsername.length < 3){
+            invalidUsername = true;
+        }
         let cleanpassword = sanitizer.sanitize(json.password);
         let pwhash = md5(cleanpassword);
         socket.userrrr = sanitizedUsername;
-        if (sanitizedUsername in users) {
+        if (sanitizedUsername in users || invalidUsername) {
             callback(false);
+            socket.emit('failedLogin', {message: 'Invalid input or user is already online', errorcode: 1});
         } else {
             callback(true);
             //database implement
@@ -87,7 +92,7 @@ io.sockets.on('connection', function(socket) {
                         if(pwhash == storedPwHash){
                             successfulLogin(socket, sanitizedUsername, users);
                         }else{
-                            socket.emit('failedLogin', '');
+                            socket.emit('failedLogin', {message: 'Credentials invalid', errorcode: 0});
                             socket.disconnect();
                         }
                     }else{
@@ -135,7 +140,8 @@ io.sockets.on('connection', function(socket) {
      * @param {any} data Data which is passed by the client
      */
     socket.on('send file group', function(data) {
-        let json = {nickname: socket.nickname, message: data.message, file: data.uploadfile, timestamp: new Date()};
+        let sanitizedMessage = sanitizer.sanitize(data.message);
+        let json = {nickname: socket.nickname, message: sanitizedMessage, file: data.uploadfile, timestamp: new Date()};
         io.emit('send file group', json);
         console.log(socket.nickname + ' sent a file to everyone!');
     });
@@ -146,8 +152,9 @@ io.sockets.on('connection', function(socket) {
      * @param {any} data Data which is passed by the client
      */
     socket.on('send file private', function(data) {
-        let msg = data.message.trim();
-        let array = data.message.trim().split(' ');
+        let sanitizedMessage = sanitizer.sanitize(data.message);
+        let msg = sanitizedMessage.trim();
+        let array = sanitizedMessage.trim().split(' ');
         msg = msg.substr(3);
         let ind = msg.indexOf(' ');
         let msgtext = msg.substring(ind + 1);
@@ -173,7 +180,8 @@ io.sockets.on('connection', function(socket) {
      * @param {any} callback 
      */
     socket.on('send message', function(data, callback) {
-        let msg = data.trim();
+        let sanitizedMessage = sanitizer.sanitize(data);
+        let msg = sanitizedMessage.trim();
         if (msg !== '') {
             //Check if '\w' command was used
             if (msg.substring(0, 3) === '\\w ') {
@@ -257,21 +265,6 @@ io.sockets.on('connection', function(socket) {
         }
     });
 
-    /**
-     * Command for status message when a new user enters
-     * 
-     * @param {any} msg Data which is passed by the client (nickname)
-     */
-    socket.on('enter user', function(msg) {
-        console.log('User ' + socket.nickname + ' entered the chat!');
-        let json = {
-            nickname: socket.nickname,
-            timestamp: new Date()
-        };
-        io.emit('enter user', json);
-    });
-
-    
     /**
      * Command for status message when a users leaves
      * Deletes user from users {}
