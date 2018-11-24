@@ -2,12 +2,13 @@
     Chat Group O
     Authors: Merve Tagmut 761399, Alice Grigorjan 751206
  -->
+
  <!doctype html>
  <html>
  <head>
      <title>Chatroom</title>
      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-     
+
      <!-- CCS-Part -->
      <style>
          #Instructions{
@@ -81,12 +82,16 @@
          <h1>Cloud Computing </h1>
          <h2>Project</h2>
          <br>
-         <p>Please enter your username... </p>
+         <p>Please enter your <b>username</b> and <b>password</b>... </p>
          <p>Only characters from A-Z and numbers are allowed.</p>
          <p id="nickError"></p>
          <form id="setNick">
              <i class="glyphicon glyphicon-user"></i>
-             <input size="30" id="nickname" autocomplete="off" autofocus pattern="[A-Za-z0-9]+"></input>
+             <input size="30" id="nickname" autocomplete="off" placeholder="Username" autofocus pattern="[A-Za-z0-9]+"></input>
+             <br>
+             <br>
+             <input type="password" name="password" placeholder="Password"><br><br>
+             <input type="reset">
              <input type="submit" value="Send"></input><br><br>
          </form>
      </div>
