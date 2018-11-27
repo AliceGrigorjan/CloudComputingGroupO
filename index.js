@@ -43,6 +43,8 @@ let express = require('express'),
     index.enable('trust proxy');
 
 //TLS
+index.use('/', express.static(__dirname + '/chat'));
+
 index.use (function (req, res, next) {
   if (req.secure || process.env.BLUEMIX_REGION === undefined) {
     next();
