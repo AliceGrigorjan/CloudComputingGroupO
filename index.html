@@ -91,8 +91,9 @@
              <br>
              <br>
              <input id="passwordfield" type="password" name="password" placeholder="Password"><br><br>
-             <input type="reset">
-             <input type="submit" value="Send"></input><br><br>
+             <label for="avatar">Wähle ein Profilbild:</label>
+             <input type="file" id="avatar" name="avatar" accept="image/png, image/jpeg">
+             <input type="reset"><input type="submit" value="Send"></input><br><br>
          </form>
      </div>
      
@@ -120,13 +121,15 @@
  
  
  <!-- Scripts -->
- 
  <script src="https://code.jquery.com/jquery-latest.min.js"></script>
  <script src="/socket.io/socket.io.js"></script>
  <script>
      //Variables
      jQuery(function($) {
          let socket = io.connect();
+         let fileReader = new FileReader();
+         var avatarAdded=false;
+         let avatar;
          let $nickForm = $('#setNick');
          let $nickError = $('#nickError');
          let $nickBox = $('#nickname');
@@ -142,12 +145,14 @@
      * @param {JQueryEventObject} e Event which gets passed to Event Handler
      */
          $nickForm.submit(function(e) {
+             data={pic:avatar};
              e.preventDefault();
              let nickname = $nickBox.val();
              if(nickname.trim() != ''){
                  let json = {
                      nickname: $nickBox.val(),
-                     password: $password.val()
+                     password: $password.val(),
+                     pic: data.pic
                  };
                  socket.emit('new user', json, function(data) {
                      if (data) {
@@ -217,6 +222,11 @@
             $('#contentContainer').show();
             $messageBox.focus();
          });
+
+             /*Invalid Picture without Face*/
+        socket.on('invalidPicture', function () {
+        alert("Register failed: Please select a profile picture with your face.");
+    });
 
          socket.on('failedLogin', function(data){
             let msg = data.message;
@@ -301,6 +311,18 @@
              $users.html(html);
              $users.show();
          });
+
+         /*
+    * File Uploader for profile Pictures.
+    * */
+    $('#avatar').change(function(e){
+        avatar = e.target.files[0];
+        fileReader.readAsDataURL(avatar);
+        avatarAdded = true;
+        fileReader.onload  = function(){
+            avatar = fileReader.result;
+        };
+    });
      });
  </script>
  </body>

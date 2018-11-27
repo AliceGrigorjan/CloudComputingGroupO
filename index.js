@@ -6,6 +6,8 @@
 
 //Variables
 let ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
+
+var VisualRecognitionV3 = require('watson-developer-cloud/visual-recognition/v3');
 //Require express framework
 let express = require('express'),
     //Start the app by creating an express application
@@ -23,6 +25,32 @@ let express = require('express'),
     let sanitizer = require('sanitizer');
 
     let md5 = require('md5');
+
+    let async = require('async');
+
+    let uuid = require('uuid');
+
+    let os = require('os');
+
+    let path = require('path');
+
+    let fs = require('fs');
+
+    let FOURTY_SECONDS = 40000;
+
+    let face = false;
+
+    index.enable('trust proxy');
+
+//TLS
+index.use (function (req, res, next) {
+  if (req.secure || process.env.BLUEMIX_REGION === undefined) {
+    next();
+  } else {
+    console.log('redirecting to https');
+    res.redirect('https://' + req.headers.host + req.url);
+  }
+});
 
 //Start the server, which listens on port 3000
 server.listen(port, function() {
@@ -50,6 +78,14 @@ let toneAnalyzer = new ToneAnalyzerV3({
     url: 'https://gateway-fra.watsonplatform.net/tone-analyzer/api'
 });
 
+//Create the service to visual recognition
+let visualRecognition = new VisualRecognitionV3({
+    version: '2018-03-19',
+    url: 'https://gateway.watsonplatform.net/visual-recognition/api',
+    iam_apikey: 'CIb88eWu5Pn0Nz_X4zcIE3cMkMqF5TaUefXyHiYQsOtL',
+    use_unauthenticated: false
+});
+
 /**
  * Gets called everytime a client establishes a connection
  * 
@@ -64,8 +100,8 @@ io.sockets.on('connection', function(socket) {
      * @param {any} callback 
      */
     socket.on('new user', function(json, callback) {
-        //TODO: CHECK IF USERNAME PATTERN IS OKAY & PASSWORD
         let sanitizedUsername = sanitizer.sanitize(json.nickname).trim();
+        sanitizedUsername = sanitizedUsername.replace(/\s/g, '');
         let invalidUsername = false;
         if(sanitizedUsername == '' || sanitizedUsername.length < 3){
             invalidUsername = true;
@@ -73,6 +109,47 @@ io.sockets.on('connection', function(socket) {
         let cleanpassword = sanitizer.sanitize(json.password);
         let pwhash = md5(cleanpassword);
         socket.userrrr = sanitizedUsername;
+
+        /*Look if there is a profilepic selected*/
+        if(json.pic){
+        detectFace(json.pic).then((result)=>{
+            if(face){
+                users[socket.username] = json.pic;
+                db.open(connStr, function (err,conn) {
+                    if (err) return console.log(err);
+                
+                try{
+                    let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH FROM USER WHERE USERNAME = ?");
+                    let resultSet = selectUserStatement.executeSync([sanitizedUsername]); 
+                    var resultData = resultSet.fetchAllSync({fetchMode:3}); 
+
+                    if(resultData[0]){
+                        let storedPwHash = resultData[0][1];
+                        if(pwhash == storedPwHash){
+                            successfulLogin(socket, sanitizedUsername, users);
+                        }else{
+                            socket.emit('failedLogin', {message: 'Credentials invalid', errorcode: 0});
+                            socket.disconnect();
+                        }
+                    }else{
+                        let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
+                        insertUserStatement.executeSync([sanitizedUsername, pwhash]);
+                        successfulLogin(socket, sanitizedUsername, users);
+                    }
+                }catch(exc){
+                    console.log(exc);
+                }finally{
+                    conn.close();
+                }
+                });
+            }else{
+                socket.emit('invalidPicture',{});
+            }
+        })
+        .catch((error) =>
+            socket.emit('invalidPicture',{})
+        );
+    } else{
         if (sanitizedUsername in users || invalidUsername) {
             callback(false);
             socket.emit('failedLogin', {message: 'Invalid input or user is already online', errorcode: 1});
@@ -99,7 +176,6 @@ io.sockets.on('connection', function(socket) {
                         let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
                         insertUserStatement.executeSync([sanitizedUsername, pwhash]);
                         successfulLogin(socket, sanitizedUsername, users);
-                        
                     }
                 }catch(exc){
                     console.log(exc);
@@ -108,6 +184,7 @@ io.sockets.on('connection', function(socket) {
                 }
             });
         }
+    }
     });
 
 
@@ -133,6 +210,64 @@ io.sockets.on('connection', function(socket) {
         };
         io.emit('enter user', json);
     }
+
+
+    // DETECT FACE FUNCTION
+    function detectFace(img) {
+        return new Promise(function (resolve, reject) {
+            var params = {
+                images_file: null
+            };
+            // write the base64 image to a temp fil
+            var resource = parseBase64Image(img);
+            var temp = path.join(os.tmpdir(), uuid.v1() + '.' + resource.type);
+            fs.writeFileSync(temp, resource.data);
+            params.images_file = fs.createReadStream(temp);
+    
+            var methods = [];
+            params.threshold = 0.5; //So the classifers only show images with a confindence level of 0.5 or higher
+            methods.push('detectFaces');
+            async.parallel(methods.map(function(method) {
+                var fn = visualRecognition[method].bind(visualRecognition, params);
+                return async.reflect(async.timeout(fn, FOURTY_SECONDS));
+            }), function(err, results) {
+                // combine the results
+                results.map(function(result) {
+                    if (result.value && result.value.length) {
+                        result.value = result.value[0];
+                    }
+                    if(result.value["images"][0]["faces"].length>0){
+                        face=true;
+                        console.log("GESICHT");
+                        resolve(true);
+                    }else{
+                        console.log("KEIN GESICHT!");
+                        reject(false);
+                    }
+                    //console.log("RESULT: "+JSON.stringify(result.value["images"][0]["faces"]));
+                    return result;
+                })
+            });
+        });
+    }
+
+    
+    /**
+ * Parse a base 64 image and return the extension and buffer
+ * @param  {String} imageString The image data as base65 string
+ * @return {Object}             { type: String, data: Buffer }
+ */
+function parseBase64Image(imageString) {
+    console.log('IMAGESTRING '+imageString);
+    var matches = imageString.toString().match(/^data:image\/([A-Za-z-+/]+);base64,(.+)$/);
+    var resource = {};
+    if (matches.length !== 3) {
+        return null;
+    }
+    resource.type = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    resource.data = new Buffer(matches[2], 'base64');
+    return resource;
+}
 
      /**
      * Command for sending a file (broadcast)
