@@ -139,6 +139,7 @@
          let $messageBox = $('#message');
          let $chat = $('#chat');
  
+         var users;
     /**
      * Event handler for nickForm submit
      * 
@@ -225,8 +226,9 @@
 
              /*Invalid Picture without Face*/
         socket.on('invalidPicture', function () {
-        alert("Register failed: Please select a profile picture with your face.");
-    });
+            alert("Register failed: Please select a profile picture with your face.");
+            location.reload();
+        });
 
          socket.on('failedLogin', function(data){
             let msg = data.message;
@@ -303,13 +305,21 @@
           * Shows #users div which contains list of online users
           * @param {any} data Data (usernames) which is returned by the server
           * **/
-         socket.on('list', function(data) {
+         socket.on('list', function(userData) { 
+             console.log(userData);
+             users = userData;
+             
+             let picture = '';
              let html = '';
-             for (i = 0; i < data.length; i++) {
-                 html += data[i] + '<br/>'
+             for (var name in users) {
+                if(users[name]){
+                picture = '<img width="65px" src="' + users[name] + '">';
+             }
+                 html += picture + ' ' + name + '<br/><br/>'
              }
              $users.html(html);
              $users.show();
+             
          });
 
          /*

@@ -15,9 +15,10 @@ let express = require('express'),
     //Start the server
     server = require('http').createServer(index),
     //Require socket.io library and start the socket
-    io = require('socket.io').listen(server),
+    io = require('socket.io').listen(server);
     //Array in which the users will be stored
-    users = {};
+    let users = {};
+    let pictures = {};
     let port = process.env.PORT || 3000;
 
     let db = require('ibm_db');
@@ -95,6 +96,10 @@ let visualRecognition = new VisualRecognitionV3({
  */
 io.sockets.on('connection', function(socket) {
 
+    // START - on connection establishment 
+    //console.log(socket);
+    // END
+
     /**
      * Command for a new user who enters the chatroom
      * Checks if a user with this username is already registered
@@ -116,10 +121,8 @@ io.sockets.on('connection', function(socket) {
         if(json.pic){
         detectFace(json.pic).then((result)=>{
             if(face){
-                users[socket.username] = json.pic;
                 db.open(connStr, function (err,conn) {
                     if (err) return console.log(err);
-                
                 try{
                     let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH FROM USER WHERE USERNAME = ?");
                     let resultSet = selectUserStatement.executeSync([sanitizedUsername]); 
@@ -128,7 +131,7 @@ io.sockets.on('connection', function(socket) {
                     if(resultData[0]){
                         let storedPwHash = resultData[0][1];
                         if(pwhash == storedPwHash){
-                            successfulLogin(socket, sanitizedUsername, users);
+                            successfulLogin(socket, sanitizedUsername, users, json);
                         }else{
                             socket.emit('failedLogin', {message: 'Credentials invalid', errorcode: 0});
                             socket.disconnect();
@@ -136,7 +139,7 @@ io.sockets.on('connection', function(socket) {
                     }else{
                         let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
                         insertUserStatement.executeSync([sanitizedUsername, pwhash]);
-                        successfulLogin(socket, sanitizedUsername, users);
+                        successfulLogin(socket, sanitizedUsername, users, json);
                     }
                 }catch(exc){
                     console.log(exc);
@@ -146,10 +149,13 @@ io.sockets.on('connection', function(socket) {
                 });
             }else{
                 socket.emit('invalidPicture',{});
+                socket.disconnect();
             }
         })
-        .catch((error) =>
-            socket.emit('invalidPicture',{})
+        .catch((error) =>{
+            socket.emit('invalidPicture',{});
+            socket.disconnect();
+        }
         );
     } else{
         if (sanitizedUsername in users || invalidUsername) {
@@ -169,7 +175,7 @@ io.sockets.on('connection', function(socket) {
                     if(resultData[0]){
                         let storedPwHash = resultData[0][1];
                         if(pwhash == storedPwHash){
-                            successfulLogin(socket, sanitizedUsername, users);
+                            successfulLogin(socket, sanitizedUsername, users, json);
                         }else{
                             socket.emit('failedLogin', {message: 'Credentials invalid', errorcode: 0});
                             socket.disconnect();
@@ -177,7 +183,7 @@ io.sockets.on('connection', function(socket) {
                     }else{
                         let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
                         insertUserStatement.executeSync([sanitizedUsername, pwhash]);
-                        successfulLogin(socket, sanitizedUsername, users);
+                        successfulLogin(socket, sanitizedUsername, users, json);
                     }
                 }catch(exc){
                     console.log(exc);
@@ -195,12 +201,13 @@ io.sockets.on('connection', function(socket) {
         io.sockets.emit('usernames', Object.keys(users));
     }
 
-    function successfulLogin(socket, sanitizedUsername, users){
+    function successfulLogin(socket, sanitizedUsername, users, json){
         socket.emit('successfulLogin', {success: true});
         socket.nickname = sanitizedUsername;
-        users[sanitizedUsername] = socket;
+        users[socket.nickname] = socket;
+        pictures[socket.nickname] = json.pic ? json.pic : '';
         updateNicknames();
-        console.log(sanitizedUsername + ' is now logged in!');
+        console.log(socket.nickname + ' is now logged in!');
         userHasEntered(socket);
     }
 
@@ -369,7 +376,7 @@ function parseBase64Image(imageString) {
                 msg = msg.substr(5);
                 let ind = msg.indexOf(' ');
                 if (ind == -1) {
-                    socket.emit('list', Object.keys(users));
+                    socket.emit('list', pictures);
                 } else {
                     callback('Error! Please enter a correct command to show the online users!')
                 }
@@ -396,11 +403,10 @@ function parseBase64Image(imageString) {
                         timestamp: new Date()
                     });
                 });
-                //In der Variable feeling ist es drin binde es in die message ein
-
             }
         }
     });
+
 
     /**
      * Command for status message when a users leaves
