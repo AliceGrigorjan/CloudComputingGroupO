@@ -196,9 +196,16 @@ io.sockets.on('connection', function(socket) {
     });
 
 
+    function broadcastToAllValidUsers(key, value){
+        for(let username in users){
+            users[username].emit(key, value);
+        }
+    }
+
     //Updates the users {} when a user enters or leaves
     function updateNicknames() {
-        io.sockets.emit('usernames', Object.keys(users));
+        //io.sockets.emit('usernames', Object.keys(users));
+        broadcastToAllValidUsers('usernames', Object.keys(users));
     }
 
     function successfulLogin(socket, sanitizedUsername, users, json){
@@ -217,7 +224,8 @@ io.sockets.on('connection', function(socket) {
             nickname: socket.nickname,
             timestamp: new Date()
         };
-        io.emit('enter user', json);
+        //io.emit('enter user', json);
+        broadcastToAllValidUsers('enter user', json);
     }
 
 
@@ -286,7 +294,8 @@ function parseBase64Image(imageString) {
     socket.on('send file group', function(data) {
         let sanitizedMessage = sanitizer.sanitize(data.message);
         let json = {nickname: socket.nickname, message: sanitizedMessage, file: data.uploadfile, timestamp: new Date()};
-        io.emit('send file group', json);
+        //io.emit('send file group', json);
+        broadcastToAllValidUsers('send file group', json);
         console.log(socket.nickname + ' sent a file to everyone!');
     });
 
@@ -397,11 +406,18 @@ function parseBase64Image(imageString) {
                             console.log(msg + " " + feeling);
                         }
                     }
+                    /*
                     io.sockets.emit('new message', {
                         msg: msg,
                         nick: socket.nickname,
                         timestamp: new Date()
                     });
+                    **/
+                   broadcastToAllValidUsers('new message', {
+                    msg: msg,
+                    nick: socket.nickname,
+                    timestamp: new Date()
+                });
                 });
             }
         }
@@ -421,7 +437,8 @@ function parseBase64Image(imageString) {
             nickname: socket.nickname,
             timestamp: new Date()
         };
-        io.emit('user left', json);
+        //io.emit('user left', json);
+        broadcastToAllValidUsers('user left', json);
     });
 });
 
