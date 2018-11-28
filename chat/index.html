@@ -72,7 +72,6 @@
          }
      </style>
  </head>
- 
  <body>
  
  <!-- Containers -->
@@ -103,9 +102,7 @@
                  <div style="display:inline-block">
                     <input type="reset"><input type="submit" value="Send"></input><br><br>
                 </div>
-             </div>
-
-            
+             </div>     
          </form>
      </div>
      
@@ -131,7 +128,6 @@
      </div>
  </div>
  
- 
  <!-- Scripts -->
  <script src="https://code.jquery.com/jquery-latest.min.js"></script>
  <script src="/socket.io/socket.io.js"></script>
@@ -150,7 +146,6 @@
          let $messageForm = $('#send-message');
          let $messageBox = $('#message');
          let $chat = $('#chat');
- 
          var users;
     /**
      * Event handler for nickForm submit
@@ -236,12 +231,18 @@
             $messageBox.focus();
          });
 
-             /*Invalid Picture without Face*/
+        /**
+        * Triggered when an ivalid picture has been submitted
+        * **/
         socket.on('invalidPicture', function () {
             alert("Register failed: Please select a profile picture with your face.");
             location.reload();
         });
 
+           /**
+          * Triggered when the login has failed
+          * @param {any} data Data (json) which is returned by the server
+          * **/
          socket.on('failedLogin', function(data){
             let msg = data.message;
             let errorcode = data.errorcode;
@@ -250,8 +251,6 @@
                 location.reload();
             }
          });
-         
-         
  
          /**
           * Triggered when new user enters
@@ -334,8 +333,8 @@
              
          });
 
-         /*
-    * File Uploader for profile Pictures.
+    /*
+    * Uploads the profile pictures
     * */
     $('#avatar').change(function(e){
         avatar = e.target.files[0];
