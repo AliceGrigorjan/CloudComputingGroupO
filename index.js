@@ -21,8 +21,9 @@ let users = {};
 let pictures = {};
 let port = process.env.PORT || 3000;
 let db = require('ibm_db');
+let helmet = require('helmet');
 let sanitizer = require('sanitizer');
-let md5 = require('md5');
+let passwordhash = require('password-hash');
 let async = require('async');
 let uuid = require('uuid');
 let os = require('os');
@@ -32,18 +33,6 @@ let FOURTY_SECONDS = 40000;
 let face = false;
 
 index.enable('trust proxy');
-
-/*Using TLS channels between client and server only*/
-index.use('/', express.static(__dirname + '/chat'));
-
-index.use(function(req, res, next) {
-    if (req.secure || process.env.BLUEMIX_REGION === undefined) {
-        next();
-    } else {
-        console.log('redirecting to https');
-        res.redirect('https://' + req.headers.host + req.url);
-    }
-});
 
 /*Start the server, which listens on port 3000*/
 server.listen(port, function() {
@@ -56,6 +45,9 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
     'DATABASE=BLUDB;' +
     'UID=qrt96392;' +
     'PWD=9vv9s02^kp3pz8rf';
+
+/*Using TLS channels between client and server only*/
+index.use(helmet());
 
 /*Routing a client to index.html everytime they visit localhost:3000 (default)*/
 index.get('/', function(req, res) {
@@ -99,7 +91,7 @@ io.sockets.on('connection', function(socket) {
             invalidUsername = true;
         }
         let cleanpassword = sanitizer.sanitize(json.password);
-        let pwhash = md5(cleanpassword);
+        let pwhash = passwordhash.generate(cleanpassword);
         socket.userrrr = sanitizedUsername;
 
         /*Checking if a profile picture has been selected*/
