@@ -29,7 +29,7 @@ let uuid = require('uuid');
 let os = require('os');
 let path = require('path');
 let fs = require('fs');
-let xssFilter = require('x-xss-protection'); //NEEDS TO BE FIXED
+//let xssFilter = require('x-xss-protection'); //NEEDS TO BE FIXED
 let FOURTY_SECONDS = 40000;
 let face = false;
 
@@ -50,9 +50,10 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
 index.use(helmet());
 
 /*Ensuring xss protection*/
-index.use(xssFilter({ setOnOldIE: true }));
+//index.use(xssFilter({ setOnOldIE: true }));
 
 /*CORS Access Policy*/
+/*
 index.use(function (req, res, next) {
     if (req.secure || process.env.BLUEMIX_REGION === undefined) {
         // Website we wish to allow to connect
@@ -71,6 +72,7 @@ index.use(function (req, res, next) {
         res.redirect('https://' + req.headers.host + req.url);
     }
 });
+**/
 
 /*Routing a client to index.html everytime they visit localhost:3000 (default)*/
 index.get('/', function(req, res) {
@@ -109,12 +111,12 @@ io.sockets.on('connection', function(socket) {
         /*Sanitizing the username and password*/
         let sanitizedUsername = sanitizer.sanitize(json.nickname).trim();
         sanitizedUsername = sanitizedUsername.replace(/\s/g, '');
-            var invalidUsername = false;
+            let invalidUsername = false;
             if (sanitizedUsername == '' || sanitizedUsername.length < 3 || !sanitizedUsername.match(/^([a-zA-Z0-9]+)$/)) {
                 invalidUsername = true;
             }
             let cleanpassword = sanitizer.sanitize(json.password);
-            var pwhash = passwordhash.generate(cleanpassword);
+            let pwhash = passwordhash.generate(cleanpassword);
             socket.userrrr = sanitizedUsername;
 
         /*Checking if a profile picture has been selected*/
