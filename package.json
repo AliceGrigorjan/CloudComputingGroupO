@@ -2,6 +2,7 @@
   "authors": "Alice Grigorjan 751206, Merve Tagmut 761399",
   "name": "Chat-Group-O",
   "version": "0.0.1",
+  "main": "lib/index",
   "private": "true",
   "dependencies": {
     "async": "^2.6.1",
@@ -20,7 +21,8 @@
     "sanitizer": "^0.1.3",
     "socket.io": "2.1.1",
     "uuid": "^3.3.2",
-    "watson-developer-cloud": "^3.13.0"
+    "watson-developer-cloud": "^3.13.0",
+    "x-xss-protection": "^1.1.0"
   },
   "scripts": {
     "start": "node index.js"
