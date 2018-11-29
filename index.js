@@ -134,7 +134,7 @@ io.sockets.on('connection', function(socket) {
 
                                 if (resultData[0]) {
                                     let storedPwHash = resultData[0][1];
-                                    if (pwhash == storedPwHash) {
+                                    if (passwordhash.verify(cleanpassword, storedPwHash)) {
                                         successfulLogin(socket, sanitizedUsername, users, json);
                                     } else {
                                         socket.emit('failedLogin', {
@@ -183,7 +183,7 @@ io.sockets.on('connection', function(socket) {
 
                         if (resultData[0]) {
                             let storedPwHash = resultData[0][1];
-                            if (pwhash == storedPwHash) {
+                            if (passwordhash.verify(cleanpassword, storedPwHash)) {
                                 successfulLogin(socket, sanitizedUsername, users, json);
                             } else {
                                 socket.emit('failedLogin', {
