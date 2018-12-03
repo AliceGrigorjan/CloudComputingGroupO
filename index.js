@@ -53,7 +53,7 @@ index.use(helmet());
 //index.use(xssFilter({ setOnOldIE: true }));
 
 /*CORS Access Policy*/
-/*
+
 index.use(function (req, res, next) {
     if (req.secure || process.env.BLUEMIX_REGION === undefined) {
         // Website we wish to allow to connect
@@ -71,8 +71,7 @@ index.use(function (req, res, next) {
         console.log('redirecting to https');
         res.redirect('https://' + req.headers.host + req.url);
     }
-});
-**/
+})
 
 /*Routing a client to index.html everytime they visit localhost:3000 (default)*/
 index.get('/', function(req, res) {
@@ -135,7 +134,7 @@ io.sockets.on('connection', function(socket) {
                                 if (resultData[0]) {
                                     let storedPwHash = resultData[0][1];
                                     if (passwordhash.verify(cleanpassword, storedPwHash)) {
-                                        successfulLogin(socket, sanitizedUsername, users, json);
+                                        successfulLogin(socket, sanitizedUsername, users, json, conn);
                                     } else {
                                         socket.emit('failedLogin', {
                                             message: 'Credentials invalid',
@@ -144,9 +143,9 @@ io.sockets.on('connection', function(socket) {
                                         socket.disconnect();
                                     }
                                 } else {
-                                    let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
-                                    insertUserStatement.executeSync([sanitizedUsername, pwhash]);
-                                    successfulLogin(socket, sanitizedUsername, users, json);
+                                    let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH, PICTURE) VALUES (?, ?, ?)");
+                                    insertUserStatement.executeSync([sanitizedUsername, pwhash, json.pic]);
+                                    successfulLogin(socket, sanitizedUsername, users, json, conn);
                                 }
                             } catch (exc) {
                                 console.log(exc);
@@ -184,7 +183,7 @@ io.sockets.on('connection', function(socket) {
                         if (resultData[0]) {
                             let storedPwHash = resultData[0][1];
                             if (passwordhash.verify(cleanpassword, storedPwHash)) {
-                                successfulLogin(socket, sanitizedUsername, users, json);
+                                successfulLogin(socket, sanitizedUsername, users, json, conn);
                             } else {
                                 socket.emit('failedLogin', {
                                     message: 'Credentials invalid',
@@ -195,7 +194,7 @@ io.sockets.on('connection', function(socket) {
                         } else {
                             let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
                             insertUserStatement.executeSync([sanitizedUsername, pwhash]);
-                            successfulLogin(socket, sanitizedUsername, users, json);
+                            successfulLogin(socket, sanitizedUsername, users, json, conn);
                         }
                     } catch (exc) {
                         console.log(exc);
@@ -225,16 +224,26 @@ io.sockets.on('connection', function(socket) {
      * @param {any} users
      * @param {any} json
      */
-    function successfulLogin(socket, sanitizedUsername, users, json) {
-        socket.emit('successfulLogin', {
-            success: true
-        });
+    function successfulLogin(socket, sanitizedUsername, users, json, conn) {
+        let pictureOfUser = loadPictureFromUser(sanitizedUsername, conn);
         socket.nickname = sanitizedUsername;
         users[socket.nickname] = socket;
-        pictures[socket.nickname] = json.pic ? json.pic : '';
+        pictures[socket.nickname] = pictureOfUser ? pictureOfUser : '';
         updateNicknames();
         console.log(socket.nickname + ' is now logged in!');
         userHasEntered(socket);
+        socket.emit('successfulLogin', {
+            success: true
+        }); 
+    }
+
+    function loadPictureFromUser(nickname, conn){
+        let selectUserStatement = conn.prepareSync("SELECT PICTURE FROM USER WHERE USERNAME = ?");
+        let resultSet = selectUserStatement.executeSync([nickname]);
+        var resultData = resultSet.fetchAllSync({
+            fetchMode: 3
+        });
+        return resultData;
     }
 
     /**
@@ -460,6 +469,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('disconnect', function() {
         if (!socket.nickname) return;
         delete users[socket.nickname];
+        delete pictures[socket.nickname];
         console.log('User ' + socket.nickname + ' left the chat!');
         updateNicknames();
         let json = {
