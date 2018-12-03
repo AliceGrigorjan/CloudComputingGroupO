@@ -61,10 +61,10 @@ index.use(function (req, res, next) {
     //True, if the website has to include cookies if request is sent
     //to the API (e.g. in case sessions are used)
     res.setHeader('Access-Control-Allow-Credentials', true);
-
+    //XSS
     res.setHeader('X-XSS-Protection', 1);
-
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' code.jquery.com; connect-src 'self'; img-src 'self'; style-src 'self' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
+    //CSP
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline' code.jquery.com; connect-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
 
     
     
