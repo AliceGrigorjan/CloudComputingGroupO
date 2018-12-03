@@ -64,7 +64,7 @@ index.use(function (req, res, next) {
 
     res.setHeader('X-XSS-Protection', 1);
 
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' code.jquery.com; connect-src 'self'; img-src 'self'; style-src 'self' maxcdn.bootstrapcdn.com;");
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' code.jquery.com; connect-src 'self'; img-src 'self'; style-src 'self' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
 
     
     
