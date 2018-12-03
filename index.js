@@ -64,7 +64,7 @@ index.use(function (req, res, next) {
     //XSS
     res.setHeader('X-XSS-Protection', 1);
     //CSP
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline' code.jquery.com; connect-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline' code.jquery.com; connect-src 'self' confident-meitner.eu-de.mybluemix.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
 
     
     
