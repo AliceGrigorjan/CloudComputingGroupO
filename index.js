@@ -29,7 +29,6 @@ let uuid = require('uuid');
 let os = require('os');
 let path = require('path');
 let fs = require('fs');
-//let xssFilter = require('x-xss-protection'); //NEEDS TO BE FIXED
 let FOURTY_SECONDS = 40000;
 let face = false;
 
@@ -49,9 +48,6 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
 /*Using TLS channels between client and server only*/
 index.use(helmet());
 
-/*Ensuring xss protection*/
-//index.use(xssFilter({ setOnOldIE: true }));
-
 /*CORS Access Policy*/
 
 index.use(function (req, res, next) {
@@ -67,30 +63,10 @@ index.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Credentials', true);
 
     res.setHeader('X-XSS-Protection', 1);
+
+    res.setHeader('Content-Security-Policy', "default-src 'self'");
     
     next();
-
-    /*
-    if (req.secure || process.env.BLUEMIX_REGION === undefined) {
-        // Website we wish to allow to connect
-        res.setHeader('Access-Control-Allow-Origin', 'https://confident-meitner.eu-de.mybluemix.net/');
-        // Request methods we wish to allow
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-        // Request headers we wish to allow
-        res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-        //True, if the website has to include cookies if request is sent
-        //to the API (e.g. in case sessions are used)
-        res.setHeader('Access-Control-Allow-Credentials', true);
-
-        res.setHeader('X-XSS-Protection', 1);
-        
-        next();
-    } else {
-        console.log('redirecting to https');
-        res.redirect('https://' + req.headers.host + req.url);
-    }
-    */
-    
 })
 
 /*Routing a client to index.html everytime they visit localhost:3000 (default)*/
