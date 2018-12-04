@@ -64,10 +64,8 @@ index.use(function (req, res, next) {
     //XSS
     res.setHeader('X-XSS-Protection', 1);
     //CSP
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline' code.jquery.com; connect-src 'self' wss://confident-meitner.eu-de.mybluemix.net confident-meitner.eu-de.mybluemix.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline' code.jquery.com; connect-src 'self' ws://localhost:3000 wss://confident-meitner.eu-de.mybluemix.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
 
-    
-    
     next();
 })
 
