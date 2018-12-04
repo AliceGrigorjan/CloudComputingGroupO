@@ -5,9 +5,9 @@
  */
 
 /*Variables*/
-let ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
 
-var VisualRecognitionV3 = require('watson-developer-cloud/visual-recognition/v3');
+let ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
+let VisualRecognitionV3 = require('watson-developer-cloud/visual-recognition/v3');
 /*Require express framework*/
 let express = require('express'),
     /*Start the app by creating an express application*/
@@ -16,9 +16,13 @@ let express = require('express'),
     server = require('http').createServer(index),
     /*Require socket.io library and start the socket*/
     io = require('socket.io').listen(server);
+
 /*Array in which the users will be stored*/
 let users = {};
+
+/*Array in which the pictures will be stored*/
 let pictures = {};
+
 let port = process.env.PORT || 3000;
 let db = require('ibm_db');
 let helmet = require('helmet');
@@ -29,7 +33,7 @@ let uuid = require('uuid');
 let os = require('os');
 let path = require('path');
 let fs = require('fs');
-let FOURTY_SECONDS = 40000;
+let TIMESPAN = 40000;
 let face = false;
 
 
@@ -49,7 +53,6 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
 index.use(helmet());
 
 /*CORS Access Policy*/
-
 index.use(function (req, res, next) {
 
     // Website we wish to allow to connect
@@ -112,7 +115,6 @@ io.sockets.on('connection', function(socket) {
             }
             let cleanpassword = sanitizer.sanitize(json.password);
             let pwhash = passwordhash.generate(cleanpassword);
-            socket.userrrr = sanitizedUsername;
 
         /*Checking if a profile picture has been selected*/
         if (json.pic) {
@@ -121,7 +123,7 @@ io.sockets.on('connection', function(socket) {
                         db.open(connStr, function(err, conn) {
                             if (err) return console.log(err);
                             try {
-                                let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH FROM USER WHERE USERNAME = ?");
+                                let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH, PICTURE FROM USER WHERE USERNAME = ?");
                                 let resultSet = selectUserStatement.executeSync([sanitizedUsername]);
                                 var resultData = resultSet.fetchAllSync({
                                     fetchMode: 3
@@ -129,7 +131,13 @@ io.sockets.on('connection', function(socket) {
 
                                 if (resultData[0]) {
                                     let storedPwHash = resultData[0][1];
+                                    let storedPicture = resultData[0][2];
                                     if (passwordhash.verify(cleanpassword, storedPwHash)) {
+                                        if(json.pic != storedPicture){
+                                            //Update profile picture
+                                            let updateUserStatement = conn.prepareSync("UPDATE USER SET PICTURE = ? WHERE USERNAME = ?");
+                                            updateUserStatement.executeSync([json.pic, sanitizedUsername]);
+                                        }
                                         successfulLogin(socket, sanitizedUsername, users, json, conn);
                                     } else {
                                         socket.emit('failedLogin', {
@@ -138,7 +146,9 @@ io.sockets.on('connection', function(socket) {
                                         });
                                         socket.disconnect();
                                     }
-                                } else {
+                                } 
+                                //Insert credentials and picture into the database
+                                else {
                                     let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH, PICTURE) VALUES (?, ?, ?)");
                                     insertUserStatement.executeSync([sanitizedUsername, pwhash, json.pic]);
                                     successfulLogin(socket, sanitizedUsername, users, json, conn);
@@ -187,7 +197,8 @@ io.sockets.on('connection', function(socket) {
                                 });
                                 socket.disconnect();
                             }
-                        } else {
+                        }//Insert credentials into the database
+                         else {
                             let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
                             insertUserStatement.executeSync([sanitizedUsername, pwhash]);
                             successfulLogin(socket, sanitizedUsername, users, json, conn);
@@ -202,6 +213,7 @@ io.sockets.on('connection', function(socket) {
         }
     });
 
+    /*Broadcasts messages to users which are actually in the chat only */
     function broadcastToAllValidUsers(key, value) {
         for (let username in users) {
             users[username].emit(key, value);
@@ -232,6 +244,13 @@ io.sockets.on('connection', function(socket) {
             success: true
         }); 
     }
+
+    /**
+     * Loads profile picture of the user
+     * @param {any} nickname The nickname of the user
+     * @param {any} conn The connection
+     * @return {any} 
+     */
 
     function loadPictureFromUser(nickname, conn){
         let selectUserStatement = conn.prepareSync("SELECT PICTURE FROM USER WHERE USERNAME = ?");
@@ -271,23 +290,25 @@ io.sockets.on('connection', function(socket) {
             fs.writeFileSync(temp, resource.data);
             params.images_file = fs.createReadStream(temp);
             var methods = [];
-            //Show images with a confindence level of 0.5 or higher only
+            //Show images with confidence level of 0.5 or higher only
             params.threshold = 0.5;
             methods.push('detectFaces');
             async.parallel(methods.map(function(method) {
                 var fn = visualRecognition[method].bind(visualRecognition, params);
-                return async.reflect(async.timeout(fn, FOURTY_SECONDS));
+                return async.reflect(async.timeout(fn, TIMESPAN));
             }), function(err, results) {
-                //Combining of the results
                 results.map(function(result) {
                     if (result.value && result.value.length) {
                         result.value = result.value[0];
                     }
+                    //Face detected
                     if (result.value["images"][0]["faces"].length > 0) {
                         face = true;
                         console.log("IT'S A FACE");
                         resolve(true);
-                    } else {
+                    } 
+                    //No face detected
+                    else {
                         console.log("IT'S NOT A FACE");
                         reject(false);
                     }
@@ -456,7 +477,6 @@ io.sockets.on('connection', function(socket) {
             }
         }
     });
-
 
     /**
      * Command for status message when a users leaves
