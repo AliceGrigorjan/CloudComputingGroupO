@@ -118,6 +118,13 @@ io.sockets.on('connection', function(socket) {
 
         /*Checking if a profile picture has been selected*/
         if (json.pic) {
+            if (sanitizedUsername in users || invalidUsername) {
+                callback(false);
+                socket.emit('failedLogin', {
+                    message: 'Invalid input or user is already online.',
+                    errorcode: 1
+                });
+            }else{
             detectFace(json.pic).then((result) => {
                     if (face) {
                         db.open(connStr, function(err, conn) {
@@ -168,7 +175,7 @@ io.sockets.on('connection', function(socket) {
                     socket.emit('invalidPicture', {});
                     socket.disconnect();
                 });
-        } else {
+       } } else {
             if (sanitizedUsername in users || invalidUsername) {
                 callback(false);
                 socket.emit('failedLogin', {
