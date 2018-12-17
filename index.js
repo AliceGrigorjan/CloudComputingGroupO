@@ -35,7 +35,13 @@ let path = require('path');
 let fs = require('fs');
 let TIMESPAN = 40000;
 let face = false;
+let redis = require('redis');
+let adapter = require('socket.io-redis');
 
+let publish = redis.createClient('13801','redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', { auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"}); //send
+let submission = redis.createClient('13801','redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', { auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"}); //recieve
+
+io.adapter(adapter({pubClient: publish, subClient: submission}));
 
 /*Start the server, which listens on port 3000*/
 server.listen(port, function() {
