@@ -38,6 +38,8 @@ let face = false;
 let redis = require('redis');
 let adapter = require('socket.io-redis');
 
+
+
 let publish = redis.createClient('13801','redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', { auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"}); //send
 let submission = redis.createClient('13801','redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', { auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"}); //recieve
 

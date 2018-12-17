@@ -129,12 +129,19 @@
  </div>
  
  <!-- Scripts -->
+ <script src="wss://confident-meitner.eu-de.mybluemix.net/socket.io/socket.io.js"></script>
  <script src="https://code.jquery.com/jquery-latest.min.js"></script>
  <script src="/socket.io/socket.io.js"></script>
  <script>
      //Variables
      jQuery(function($) {
-         let socket = io.connect();
+         let socket = io.connect({
+             reconnection:true,
+             reconnectionDelay: 1000,
+             reconnectionDelayMax: 5000,
+             reconnectionAttempts: 99999,
+             transports:['websocket']
+         });
          let fileReader = new FileReader();
          var avatarAdded=false;
          let avatar;
