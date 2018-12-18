@@ -40,10 +40,17 @@ let adapter = require('socket.io-redis');
 
 
 
-let publish = redis.createClient('13801','redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', { auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"}); //send
-let submission = redis.createClient('13801','redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', { auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"}); //recieve
+let publish = redis.createClient('13801', 'redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', {
+    auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"
+}); //send
+let submission = redis.createClient('13801', 'redis-13801.c135.eu-central-1-1.ec2.cloud.redislabs.com', {
+    auth_pass: "Z0h6MsgmDi4Lfdzr1QVmXJAOUY3MwDwK"
+}); //recieve
 
-io.adapter(adapter({pubClient: publish, subClient: submission}));
+io.adapter(adapter({
+    pubClient: publish,
+    subClient: submission
+}));
 
 /*Start the server, which listens on port 3000*/
 server.listen(port, function() {
@@ -61,7 +68,7 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
 index.use(helmet());
 
 /*CORS Access Policy*/
-index.use(function (req, res, next) {
+index.use(function(req, res, next) {
 
     // Website we wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', 'https://confident-meitner.eu-de.mybluemix.net/');
@@ -74,8 +81,6 @@ index.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     //XSS
     res.setHeader('X-XSS-Protection', 1);
-    //CSP
-    //res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline' code.jquery.com; connect-src 'self' ws://localhost:3000 wss://confident-meitner.eu-de.mybluemix.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' maxcdn.bootstrapcdn.com; font-src 'self' maxcdn.bootstrapcdn.com;");
 
     next();
 })
@@ -117,12 +122,12 @@ io.sockets.on('connection', function(socket) {
         /*Sanitizing the username and password*/
         let sanitizedUsername = sanitizer.sanitize(json.nickname).trim();
         sanitizedUsername = sanitizedUsername.replace(/\s/g, '');
-            let invalidUsername = false;
-            if (sanitizedUsername == '' || sanitizedUsername.length < 3 || !sanitizedUsername.match(/^([a-zA-Z0-9]+)$/)) {
-                invalidUsername = true;
-            }
-            let cleanpassword = sanitizer.sanitize(json.password);
-            let pwhash = passwordhash.generate(cleanpassword);
+        let invalidUsername = false;
+        if (sanitizedUsername == '' || sanitizedUsername.length < 3 || !sanitizedUsername.match(/^([a-zA-Z0-9]+)$/)) {
+            invalidUsername = true;
+        }
+        let cleanpassword = sanitizer.sanitize(json.password);
+        let pwhash = passwordhash.generate(cleanpassword);
 
         /*Checking if a profile picture has been selected*/
         if (json.pic) {
@@ -132,58 +137,66 @@ io.sockets.on('connection', function(socket) {
                     message: 'Invalid input or user is already online.',
                     errorcode: 1
                 });
-            }else{
-            detectFace(json.pic).then((result) => {
-                    if (face) {
-                        db.open(connStr, function(err, conn) {
-                            if (err) return console.log(err);
-                            try {
-                                let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH, PICTURE FROM USER WHERE USERNAME = ?");
-                                let resultSet = selectUserStatement.executeSync([sanitizedUsername]);
-                                var resultData = resultSet.fetchAllSync({
-                                    fetchMode: 3
-                                });
+            } else {
+                detectFace(json.pic).then((result) => {
+                        if (face) {
+                            db.open(connStr, function(err, conn) {
+                                if (err) return console.log(err);
+                                try {
+                                    let selectUserStatement = conn.prepareSync("SELECT USERNAME, PWHASH, PICTURE FROM USER WHERE USERNAME = ?");
+                                    let resultSet = selectUserStatement.executeSync([sanitizedUsername]);
+                                    var resultData = resultSet.fetchAllSync({
+                                        fetchMode: 3
+                                    });
 
-                                if (resultData[0]) {
-                                    let storedPwHash = resultData[0][1];
-                                    let storedPicture = resultData[0][2];
-                                    if (passwordhash.verify(cleanpassword, storedPwHash)) {
-                                        if(json.pic != storedPicture){
-                                            //Update profile picture
-                                            let updateUserStatement = conn.prepareSync("UPDATE USER SET PICTURE = ? WHERE USERNAME = ?");
-                                            updateUserStatement.executeSync([json.pic, sanitizedUsername]);
+                                    if (resultData[0]) {
+                                        let storedPwHash = resultData[0][1];
+                                        let storedPicture = resultData[0][2];
+                                        if (sanitizedUsername in users || invalidUsername) {
+                                            callback(false);
+                                            socket.emit('failedLogin', {
+                                                message: 'Invalid input or user is already online.',
+                                                errorcode: 1
+                                            });
                                         }
-                                        successfulLogin(socket, sanitizedUsername, users, json, conn);
-                                    } else {
-                                        socket.emit('failedLogin', {
-                                            message: 'Credentials invalid',
-                                            errorcode: 0
-                                        });
-                                        socket.disconnect();
+                                        if (passwordhash.verify(cleanpassword, storedPwHash) && !(sanitizedUsername in users) && !invalidUsername) {
+                                            if (json.pic != storedPicture) {
+                                                //Update profile picture
+                                                let updateUserStatement = conn.prepareSync("UPDATE USER SET PICTURE = ? WHERE USERNAME = ?");
+                                                updateUserStatement.executeSync([json.pic, sanitizedUsername]);
+                                            }
+                                            successfulLogin(socket, sanitizedUsername, users, json, conn);
+                                        } else {
+                                            socket.emit('failedLogin', {
+                                                message: 'Credentials invalid or user already online.',
+                                                errorcode: 0
+                                            });
+                                            socket.disconnect();
+                                        }
                                     }
-                                } 
-                                //Insert credentials and picture into the database
-                                else {
-                                    let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH, PICTURE) VALUES (?, ?, ?)");
-                                    insertUserStatement.executeSync([sanitizedUsername, pwhash, json.pic]);
-                                    successfulLogin(socket, sanitizedUsername, users, json, conn);
+                                    //Insert credentials and picture into the database
+                                    else {
+                                        let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH, PICTURE) VALUES (?, ?, ?)");
+                                        insertUserStatement.executeSync([sanitizedUsername, pwhash, json.pic]);
+                                        successfulLogin(socket, sanitizedUsername, users, json, conn);
+                                    }
+                                } catch (exc) {
+                                    console.log(exc);
+                                } finally {
+                                    conn.close();
                                 }
-                            } catch (exc) {
-                                console.log(exc);
-                            } finally {
-                                conn.close();
-                            }
-                        });
-                    } else {
+                            });
+                        } else {
+                            socket.emit('invalidPicture', {});
+                            socket.disconnect();
+                        }
+                    })
+                    .catch((error) => {
                         socket.emit('invalidPicture', {});
                         socket.disconnect();
-                    }
-                })
-                .catch((error) => {
-                    socket.emit('invalidPicture', {});
-                    socket.disconnect();
-                });
-       } } else {
+                    });
+            }
+        } else {
             if (sanitizedUsername in users || invalidUsername) {
                 callback(false);
                 socket.emit('failedLogin', {
@@ -212,8 +225,8 @@ io.sockets.on('connection', function(socket) {
                                 });
                                 socket.disconnect();
                             }
-                        }//Insert credentials into the database
-                         else {
+                        } //Insert credentials into the database
+                        else {
                             let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
                             insertUserStatement.executeSync([sanitizedUsername, pwhash]);
                             successfulLogin(socket, sanitizedUsername, users, json, conn);
@@ -257,7 +270,7 @@ io.sockets.on('connection', function(socket) {
         userHasEntered(socket);
         socket.emit('successfulLogin', {
             success: true
-        }); 
+        });
     }
 
     /**
@@ -267,7 +280,7 @@ io.sockets.on('connection', function(socket) {
      * @return {any} 
      */
 
-    function loadPictureFromUser(nickname, conn){
+    function loadPictureFromUser(nickname, conn) {
         let selectUserStatement = conn.prepareSync("SELECT PICTURE FROM USER WHERE USERNAME = ?");
         let resultSet = selectUserStatement.executeSync([nickname]);
         var resultData = resultSet.fetchAllSync({
@@ -321,7 +334,7 @@ io.sockets.on('connection', function(socket) {
                         face = true;
                         console.log("IT'S A FACE");
                         resolve(true);
-                    } 
+                    }
                     //No face detected
                     else {
                         console.log("IT'S NOT A FACE");
