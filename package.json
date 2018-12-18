@@ -5,6 +5,7 @@
   "main": "lib/index",
   "private": "true",
   "dependencies": {
+    "@types/redis": "^2.8.8",
     "async": "^2.6.1",
     "connect-redis": "^3.4.0",
     "express": "4.16.4",
