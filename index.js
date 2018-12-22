@@ -37,6 +37,7 @@ let TIMESPAN = 40000;
 let face = false;
 let redis = require('redis');
 let adapter = require('socket.io-redis');
+let express_enforces_ssl = require('express-enforces-ssl');
 
 
 
@@ -63,6 +64,9 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
     'DATABASE=BLUDB;' +
     'UID=qrt96392;' +
     'PWD=9vv9s02^kp3pz8rf';
+
+/*Enforcing SSL*/
+index.use(express_enforces_ssl());
 
 /*Using TLS channels between client and server only*/
 index.use(helmet());
