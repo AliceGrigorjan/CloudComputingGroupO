@@ -27,7 +27,7 @@ let port = process.env.PORT || 3000;
 let db = require('ibm_db');
 let helmet = require('helmet');
 let sanitizer = require('sanitizer');
-let passwordhash = require('password-hash');
+let bcrypt = require('bcryptjs');
 let async = require('async');
 let uuid = require('uuid');
 let os = require('os');
@@ -127,7 +127,8 @@ io.sockets.on('connection', function(socket) {
             invalidUsername = true;
         }
         let cleanpassword = sanitizer.sanitize(json.password);
-        let pwhash = passwordhash.generate(cleanpassword);
+        let salt = bcrypt.genSaltSync(10);
+        let hashedpw = bcrypt.hashSync(cleanpassword, salt);
 
         /*Checking if a profile picture has been selected*/
         if (json.pic) {
@@ -159,7 +160,7 @@ io.sockets.on('connection', function(socket) {
                                                 errorcode: 1
                                             });
                                         }
-                                        if (passwordhash.verify(cleanpassword, storedPwHash) && !(sanitizedUsername in users) && !invalidUsername) {
+                                        if (bcrypt.compareSync(cleanpassword, storedPwHash) && !(sanitizedUsername in users) && !invalidUsername) {
                                             if (json.pic != storedPicture) {
                                                 //Update profile picture
                                                 let updateUserStatement = conn.prepareSync("UPDATE USER SET PICTURE = ? WHERE USERNAME = ?");
@@ -177,7 +178,7 @@ io.sockets.on('connection', function(socket) {
                                     //Insert credentials and picture into the database
                                     else {
                                         let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH, PICTURE) VALUES (?, ?, ?)");
-                                        insertUserStatement.executeSync([sanitizedUsername, pwhash, json.pic]);
+                                        insertUserStatement.executeSync([sanitizedUsername, hashedpw, json.pic]);
                                         successfulLogin(socket, sanitizedUsername, users, json, conn);
                                     }
                                 } catch (exc) {
@@ -216,7 +217,7 @@ io.sockets.on('connection', function(socket) {
 
                         if (resultData[0]) {
                             let storedPwHash = resultData[0][1];
-                            if (passwordhash.verify(cleanpassword, storedPwHash)) {
+                            if (bcrypt.compareSync(cleanpassword, storedPwHash) && !(sanitizedUsername in users) && !invalidUsername) {
                                 successfulLogin(socket, sanitizedUsername, users, json, conn);
                             } else {
                                 socket.emit('failedLogin', {
@@ -228,7 +229,7 @@ io.sockets.on('connection', function(socket) {
                         } //Insert credentials into the database
                         else {
                             let insertUserStatement = conn.prepareSync("INSERT INTO USER (USERNAME, PWHASH) VALUES (?, ?)");
-                            insertUserStatement.executeSync([sanitizedUsername, pwhash]);
+                            insertUserStatement.executeSync([sanitizedUsername, hashedpw]);
                             successfulLogin(socket, sanitizedUsername, users, json, conn);
                         }
                     } catch (exc) {

@@ -7,6 +7,7 @@
   "dependencies": {
     "@types/redis": "^2.8.8",
     "async": "^2.6.1",
+    "bcryptjs": "^2.4.3",
     "connect-redis": "^3.4.0",
     "express": "4.16.4",
     "express-session": "^1.15.6",
@@ -18,7 +19,6 @@
     "material-ui-password-field": "^2.0.1",
     "os": "^0.1.1",
     "passport": "^0.4.0",
-    "password-hash": "^1.2.2",
     "path": "^0.12.7",
     "redis": "^2.8.0",
     "sanitizer": "^0.1.3",
