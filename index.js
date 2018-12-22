@@ -66,7 +66,7 @@ var connStr = 'HOSTNAME=dashdb-txn-sbox-yp-lon02-01.services.eu-gb.bluemix.net;'
     'PWD=9vv9s02^kp3pz8rf';
 
 /*Enforcing SSL*/
-//index.use(express_enforces_ssl());
+index.use(express_enforces_ssl());
 
 /*Using TLS channels between client and server only*/
 index.use(helmet());
